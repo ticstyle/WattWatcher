@@ -1,4 +1,5 @@
 """Sensor platform for WattWatcher integration."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -24,10 +25,10 @@ async def async_setup_entry(
     """Set up the WattWatcher sensor platform."""
     # Combine data and options to support runtime adjustments seamlessly
     config = {**config_entry.data, **config_entry.options}
-    
+
     name: str = config["name"]
     power_sensor: str = config["power_sensor"]
-    
+
     # Extract and structure the configured modes
     modes = []
     for i in range(1, MAX_MODES + 1):
@@ -71,7 +72,7 @@ class WattWatcherSensor(SensorEntity):
         self._power_sensor = power_sensor
         self._modes = modes
         self._attr_suggested_object_id = suggested_object_id
-        
+
         # Setting a blank string forces the entity name to match the device name exactly
         self._attr_name = ""
         self._state_value: str | None = None
@@ -84,7 +85,7 @@ class WattWatcherSensor(SensorEntity):
             manufacturer="ticstyle",
             model="WattWatcher",
         )
-        
+
         # Unique ID based on the entry ID ensures uniqueness across multiple instances
         self._attr_unique_id = f"{entry_id}_mode_sensor"
 
@@ -149,4 +150,3 @@ class WattWatcherSensor(SensorEntity):
             "current_power": self._current_power,
             "power_unit": UnitOfPower.WATT,
         }
-        
