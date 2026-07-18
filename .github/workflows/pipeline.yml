@@ -36,23 +36,23 @@ jobs:
 
       - name: Copy strings.json to translations/en.json
         run: |
-          cp custom_components/WattWatcher/strings.json custom_components/WattWatcher/translations/en.json
+          cp custom_components/wattwatcher/strings.json custom_components/wattwatcher/translations/en.json
 
       - name: Run Ruff Check
         uses: astral-sh/ruff-action@v3
         with:
-          args: "check --fix custom_components/WattWatcher"
+          args: "check --fix custom_components/wattwatcher"
 
       - name: Run Ruff Format
         uses: astral-sh/ruff-action@v3
         with:
-          args: "format custom_components/WattWatcher"
+          args: "format custom_components/wattwatcher"
 
       - name: Commit & Push changes if needed
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: sync translations and auto-format with Ruff"
-          file_pattern: "custom_components/WattWatcher/translations/en.json custom_components/WattWatcher/**"
+          file_pattern: "custom_components/wattwatcher/translations/en.json custom_components/wattwatcher/**"
 
   # ==========================================
   # JOB 2: Parallel Validation Check Suites
@@ -114,7 +114,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Mypy
-        run: mypy custom_components/WattWatcher
+        run: mypy custom_components/wattwatcher
 
   # ==========================================
   # JOB 3: Autopublish GitHub Releases
@@ -134,7 +134,7 @@ jobs:
       - name: Extract version from manifest.json
         id: get_version
         run: |
-          VERSION=$(jq -r '.version' custom_components/WattWatcher/manifest.json)
+          VERSION=$(jq -r '.version' custom_components/wattwatcher/manifest.json)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Detected version: v$VERSION"
           
