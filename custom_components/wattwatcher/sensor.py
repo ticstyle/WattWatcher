@@ -1,5 +1,4 @@
 """Sensor platform for WattWatcher integration."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -25,10 +24,10 @@ async def async_setup_entry(
     """Set up the WattWatcher sensor platform."""
     # Combine data and options to support runtime adjustments seamlessly
     config = {**config_entry.data, **config_entry.options}
-
+    
     name: str = config["name"]
     power_sensor: str = config["power_sensor"]
-
+    
     # Extract and structure the configured modes
     modes = []
     for i in range(1, MAX_MODES + 1):
@@ -72,10 +71,10 @@ class WattWatcherSensor(SensorEntity):
         self._power_sensor = power_sensor
         self._modes = modes
         self._attr_suggested_object_id = suggested_object_id
-
+        
         # Setting a blank string forces the entity name to match the device name exactly
         self._attr_name = ""
-        self._attr_state: str | None = None
+        self._state_value: str | None = None
         self._current_power: float | None = None
 
         # Build the shared device identity block
@@ -85,9 +84,14 @@ class WattWatcherSensor(SensorEntity):
             manufacturer="ticstyle",
             model="WattWatcher",
         )
-
+        
         # Unique ID based on the entry ID ensures uniqueness across multiple instances
         self._attr_unique_id = f"{entry_id}_mode_sensor"
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the current calculated operational mode state."""
+        return self._state_value
 
     async def async_added_to_hass(self) -> None:
         """Handle entity registry lifecycle hooks."""
@@ -114,7 +118,7 @@ class WattWatcherSensor(SensorEntity):
     def _update_power_state(self, state_value: str) -> None:
         """Evaluate the raw state value against the sorted mode thresholds."""
         if state_value in (STATE_UNKNOWN, STATE_UNAVAILABLE):
-            self._attr_state = None
+            self._state_value = None
             self._current_power = None
             return
 
@@ -122,21 +126,21 @@ class WattWatcherSensor(SensorEntity):
             power_val = float(state_value)
             self._current_power = power_val
         except ValueError:
-            self._attr_state = None
+            self._state_value = None
             self._current_power = None
             return
 
         # Map the power signature to the appropriate target operational mode
         for mode in self._modes:
             if power_val <= mode["max_watt"]:
-                self._attr_state = mode["name"]
+                self._state_value = mode["name"]
                 return
 
         # Default to the absolute highest configured mode if it exceeds all intermediate steps
         if self._modes:
-            self._attr_state = self._modes[-1]["name"]
+            self._state_value = self._modes[-1]["name"]
         else:
-            self._attr_state = None
+            self._state_value = None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
@@ -145,3 +149,4 @@ class WattWatcherSensor(SensorEntity):
             "current_power": self._current_power,
             "power_unit": UnitOfPower.WATT,
         }
+        
