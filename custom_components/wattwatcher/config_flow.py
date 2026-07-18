@@ -1,5 +1,4 @@
 """Config flow for WattWatcher integration."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -23,58 +22,52 @@ MAX_MODES = 6
 
 def validate_modes(user_input: dict[str, Any]) -> str | None:
     """Validate that configured modes are in strictly ascending order.
-
+    
     Returns an error key if invalid, otherwise None.
     """
     last_watt = -1.0
-
+    
     for i in range(1, MAX_MODES + 1):
         name_key = f"mode_{i}_name"
         watt_key = f"mode_{i}_max_watt"
-
+        
         name = user_input.get(name_key)
         watt = user_input.get(watt_key)
-
+        
         # If both are filled, validate the threshold sequence
         if name and watt is not None:
             current_watt = float(watt)
             if current_watt <= last_watt:
                 return "overlapping_thresholds"
             last_watt = current_watt
-
+            
     return None
 
 
 def create_schema(
-    hass: HomeAssistant,
-    defaults: dict[str, Any] | None = None,
-    is_reconfigure: bool = False,
+    hass: HomeAssistant, 
+    defaults: dict[str, Any] | None = None, 
+    is_reconfigure: bool = False
 ) -> vol.Schema:
     """Create the configuration schema with optional default values."""
     defaults = defaults or {}
-    schema = {}
+    schema: dict[vol.Marker, Any] = {}
 
     # Device name is only needed during initial setup
     if not is_reconfigure:
         schema[vol.Required("name", default=defaults.get("name", ""))] = cv.string
 
     # Source power sensor selection
-    schema[vol.Required("power_sensor", default=defaults.get("power_sensor", ""))] = (
-        selector.EntitySelector(
-            selector.EntitySelectorConfig(domain="sensor", device_class="power")
-        )
+    schema[vol.Required("power_sensor", default=defaults.get("power_sensor", ""))] = selector.EntitySelector(
+        selector.EntitySelectorConfig(domain="sensor", device_class="power")
     )
 
     # Dynamic generation of the 6 fixed mode fields
     for i in range(1, MAX_MODES + 1):
-        schema[
-            vol.Optional(f"mode_{i}_name", default=defaults.get(f"mode_{i}_name", ""))
-        ] = cv.string
-        schema[
-            vol.Optional(
-                f"mode_{i}_max_watt", default=defaults.get(f"mode_{i}_max_watt")
-            )
-        ] = vol.Any(vol.Coerce(float), None)
+        schema[vol.Optional(f"mode_{i}_name", default=defaults.get(f"mode_{i}_name", ""))] = cv.string
+        schema[vol.Optional(f"mode_{i}_max_watt", default=defaults.get(f"mode_{i}_max_watt"))] = vol.Any(
+            vol.Coerce(float), None
+        )
 
     return vol.Schema(schema)
 
@@ -96,13 +89,11 @@ class WattWatcherConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = error
             else:
                 title = user_input["name"]
-                slug = title.lower().replace(" ", "_")
-
+                
                 return self.async_create_entry(
                     title=title,
                     data=user_input,
                     options=user_input,  # Duplicate to options to make reconfigure seamless
-                    options_id=f"wattwatcher_{slug}",
                 )
 
         return self.async_show_form(
@@ -119,6 +110,7 @@ class WattWatcherConfigFlow(ConfigFlow, domain=DOMAIN):
         entry = self._get_reconfigure_entry()
 
         if user_input is not None:
+            # Validate that thresholds do not overlap
             if error := validate_modes(user_input):
                 errors["base"] = error
             else:
@@ -131,7 +123,7 @@ class WattWatcherConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # Pre-populate the GUI with the current configurations
         current_config = {**entry.data, **entry.options}
-
+        
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=create_schema(self.hass, current_config, is_reconfigure=True),
@@ -141,10 +133,6 @@ class WattWatcherConfigFlow(ConfigFlow, domain=DOMAIN):
 
 class WattWatcherOptionsFlow(OptionsFlow):
     """Handle options flow changes, mirroring the reconfigure flow behavior."""
-
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
