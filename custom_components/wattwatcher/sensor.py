@@ -1,64 +1,7 @@
-"""Sensor platform for WattWatcher integration."""
-
-from __future__ import annotations
-
-from typing import Any
-
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN, UnitOfPower
-from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.event import async_track_state_change_event
-
-from .const import DOMAIN
-
-MAX_MODES = 6
-
-
-async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up the WattWatcher sensor platform."""
-    # Combine data and options to support runtime adjustments seamlessly
-    config = {**config_entry.data, **config_entry.options}
-
-    name: str = config["name"]
-    power_sensor: str = config["power_sensor"]
-
-    # Extract and structure the configured modes
-    modes = []
-    for i in range(1, MAX_MODES + 1):
-        mode_name = config.get(f"mode_{i}_name")
-        mode_watt = config.get(f"mode_{i}_max_watt")
-        if mode_name and mode_watt is not None:
-            modes.append({"name": mode_name, "max_watt": float(mode_watt)})
-
-    # Generate a clean object ID slug for a predictable entity_id
-    slug = name.lower().replace(" ", "_")
-    suggested_object_id = f"wattwatcher_{slug}"
-
-    async_add_entities(
-        [
-            WattWatcherSensor(
-                config_entry.entry_id,
-                name,
-                power_sensor,
-                modes,
-                suggested_object_id,
-            )
-        ]
-    )
-
-
 class WattWatcherSensor(SensorEntity):
     """Representation of a WattWatcher power mode sensor."""
 
     _attr_has_entity_name = True
-    _attr_name = None  # Using None forces the entity to take the Device name directly
 
     def __init__(
         self,
@@ -73,7 +16,7 @@ class WattWatcherSensor(SensorEntity):
         self._power_sensor = power_sensor
         self._modes = modes
         self._attr_suggested_object_id = suggested_object_id
-
+        
         self._attr_state: str | None = None
         self._current_power: float | None = None
 
@@ -84,9 +27,14 @@ class WattWatcherSensor(SensorEntity):
             manufacturer="ticstyle",
             model="WattWatcher",
         )
-
+        
         # Unique ID based on the entry ID ensures uniqueness across multiple instances
         self._attr_unique_id = f"{entry_id}_mode_sensor"
+
+    @property
+    def name(self) -> str | None:
+        """Return None to force the entity to inherit the Device name directly."""
+        return None
 
     async def async_added_to_hass(self) -> None:
         """Handle entity registry lifecycle hooks."""
