@@ -1,5 +1,4 @@
 """Sensor platform for WattWatcher integration."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -51,15 +50,11 @@ async def async_setup_entry(
     active_limit_unique_ids: set[str] = set()
     for state_item in states:
         if state_item["max_watt"] != float("inf"):
-            active_limit_unique_ids.add(
-                f"{config_entry.entry_id}_limit_{state_item['name'].lower()}"
-            )
+            active_limit_unique_ids.add(f"{config_entry.entry_id}_limit_{state_item['name'].lower()}")
 
     # Safely purge any old limit entities that are no longer part of the current active configuration
     entity_reg = er.async_get(hass)
-    existing_entries = er.async_entries_for_config_entry(
-        entity_reg, config_entry.entry_id
-    )
+    existing_entries = er.async_entries_for_config_entry(entity_reg, config_entry.entry_id)
     for entity_entry in existing_entries:
         if "_limit_" in entity_entry.unique_id:
             if entity_entry.unique_id not in active_limit_unique_ids:
@@ -317,7 +312,7 @@ class WattWatcherStateLimitSensor(SensorEntity):
     ) -> None:
         """Initialize fixed configuration tracker entities."""
         self.entity_id = f"sensor.{suggested_object_id}"
-        self._attr_name = f"State Limit {state_label}"
+        self._state_label = state_label
         self._attr_native_value = limit_watt
         self._attr_unique_id = f"{entry_id}_limit_{state_label.lower()}"
 
@@ -327,3 +322,8 @@ class WattWatcherStateLimitSensor(SensorEntity):
             manufacturer="ticstyle",
             model="WattWatcher",
         )
+
+    @property
+    def name(self) -> str:
+        """Dynamically return the name to force UI updates during reconfiguration."""
+        return f"State Limit {self._state_label}"
