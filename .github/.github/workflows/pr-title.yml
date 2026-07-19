@@ -1,0 +1,54 @@
+name: "Update Pull Request Title"
+
+on:
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  update-title:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Update Pull Request Title
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const currentTitle = pr.title ? pr.title.trim() : "";
+            
+            // Only proceed if the title length is less than 4 characters
+            if (currentTitle.length < 4) {
+              
+              // Fetch the commits belonging to this PR
+              const commits = await github.rest.pullRequests.listCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+              
+              if (commits.data.length > 0) {
+                // Get the very last commit message
+                const lastCommitMessage = commits.data[commits.data.length - 1].commit.message;
+                
+                // Keep only the first line of the message
+                const newTitle = lastCommitMessage.split('\n')[0].trim();
+                
+                // Ensure the new commit title itself is valid and long enough to be useful
+                if (newTitle.length >= 4) {
+                  await github.rest.pullRequests.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: pr.number,
+                    title: newTitle
+                  });
+                  console.log(`Condition met (Title length ${currentTitle.length} < 4). Updated to: "${newTitle}"`);
+                } else {
+                  console.log(`Aborted: The latest commit message ("${newTitle}") is also shorter than 4 characters.`);
+                }
+              }
+            } else {
+              console.log(`Skipping: Current title "${currentTitle}" is ${currentTitle.length} characters long.`);
+            }
