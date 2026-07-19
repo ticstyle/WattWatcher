@@ -247,7 +247,7 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
             )
             state_lines.append(f"name: {state_item['name']}")
             state_lines.append(f"max_watt: {max_watt_str}")
-            
+
             # Append a blank entry item to split blocks neatly, except for the last index row
             if i < len(self._states) - 1:
                 state_lines.append("")
