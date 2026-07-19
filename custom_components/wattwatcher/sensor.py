@@ -1,4 +1,5 @@
 """Sensor platform for WattWatcher integration."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -54,11 +55,15 @@ async def async_setup_entry(
 
     for state_item in states:
         if state_item["max_watt"] != float("inf"):
-            active_unique_ids.add(f"{config_entry.entry_id}_limit_{state_item['name'].lower()}")
+            active_unique_ids.add(
+                f"{config_entry.entry_id}_limit_{state_item['name'].lower()}"
+            )
 
     # Purge any obsolete entities left behind from a reconfiguration
     entity_reg = er.async_get(hass)
-    existing_entries = er.async_entries_for_config_entry(entity_reg, config_entry.entry_id)
+    existing_entries = er.async_entries_for_config_entry(
+        entity_reg, config_entry.entry_id
+    )
     for entity_entry in existing_entries:
         if entity_entry.unique_id not in active_unique_ids:
             entity_reg.async_remove(entity_entry.entity_id)
