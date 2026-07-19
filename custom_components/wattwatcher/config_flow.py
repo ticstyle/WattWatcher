@@ -20,6 +20,9 @@ from .const import DOMAIN
 # Number of fixed mode slots in the GUI
 MAX_MODES = 6
 
+# Pre-defined list of standard operational modes
+DEFAULT_MODES = ["Standby", "Idle", "Running", "Gaming", "Working", "Going", "On"]
+
 
 def validate_modes(user_input: dict[str, Any]) -> str | None:
     """Validate that configured modes are in strictly ascending order.
@@ -29,7 +32,6 @@ def validate_modes(user_input: dict[str, Any]) -> str | None:
     last_watt = -1.0
 
     for i in range(1, MAX_MODES + 1):
-        # Flattened check because section fields are unpacked into the root input dict
         name_key = f"mode_{i}_name"
         watt_key = f"mode_{i}_max_watt"
 
@@ -44,6 +46,21 @@ def validate_modes(user_input: dict[str, Any]) -> str | None:
             last_watt = current_watt
 
     return None
+
+
+def flatten_section_input(user_input: dict[str, Any] | None) -> dict[str, Any]:
+    """Extract and flatten data fields packed inside UI layout sections."""
+    if not user_input:
+        return {}
+
+    flat_data = {}
+    for key, value in user_input.items():
+        if key.endswith("_section") and isinstance(value, dict):
+            flat_data.update(value)
+        else:
+            flat_data[key] = value
+
+    return flat_data
 
 
 def create_schema(
@@ -78,8 +95,17 @@ def create_schema(
             unit_of_measurement="W",
         )
 
+        # Build select selector allowing custom user entries alongside pre-defined modes
+        name_config = selector.SelectSelectorConfig(
+            options=DEFAULT_MODES,
+            custom_value=True,
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+
         sub_fields: dict[vol.Marker, Any] = {
-            vol.Optional(name_key, default=defaults.get(name_key, "")): cv.string
+            vol.Optional(
+                name_key, default=defaults.get(name_key, "")
+            ): selector.SelectSelector(name_config)
         }
 
         default_watt = defaults.get(watt_key)
@@ -112,22 +138,25 @@ class WattWatcherConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle the initial step."""
         errors: dict[str, str] = {}
 
+        # Flatten input sections immediately to handle values correctly
+        flat_input = flatten_section_input(user_input)
+
         if user_input is not None:
             # Validate that thresholds do not overlap
-            if error := validate_modes(user_input):
+            if error := validate_modes(flat_input):
                 errors["base"] = error
             else:
-                title = user_input["name"]
+                title = flat_input["name"]
 
                 return self.async_create_entry(
                     title=title,
-                    data=user_input,
-                    options=user_input,  # Duplicate to options to make reconfigure seamless
+                    data=flat_input,
+                    options=flat_input,  # Duplicate to options to make reconfigure seamless
                 )
 
         return self.async_show_form(
             step_id="user",
-            data_schema=create_schema(self.hass, user_input),
+            data_schema=create_schema(self.hass, flat_input),
             errors=errors,
         )
 
@@ -138,16 +167,18 @@ class WattWatcherConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         entry = self._get_reconfigure_entry()
 
+        flat_input = flatten_section_input(user_input)
+
         if user_input is not None:
             # Validate that thresholds do not overlap
-            if error := validate_modes(user_input):
+            if error := validate_modes(flat_input):
                 errors["base"] = error
             else:
                 # Merge new configuration details into the existing entry
                 return self.async_update_reload_and_abort(
                     entry,
-                    data={**entry.data, **user_input},
-                    options={**entry.options, **user_input},
+                    data={**entry.data, **flat_input},
+                    options={**entry.options, **flat_input},
                 )
 
         # Pre-populate the GUI with the current configurations
@@ -169,11 +200,13 @@ class WattWatcherOptionsFlow(OptionsFlow):
         """Manage the configuration options."""
         errors: dict[str, str] = {}
 
+        flat_input = flatten_section_input(user_input)
+
         if user_input is not None:
-            if error := validate_modes(user_input):
+            if error := validate_modes(flat_input):
                 errors["base"] = error
             else:
-                return self.async_create_entry(title="", data=user_input)
+                return self.async_create_entry(title="", data=flat_input)
 
         current_config = {**self.config_entry.data, **self.config_entry.options}
 

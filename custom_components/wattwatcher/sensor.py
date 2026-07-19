@@ -134,6 +134,11 @@ class WattWatcherSensor(SensorEntity):
             self._current_power = None
             return
 
+        # Explicit requirement: hardcode "Off" state if consumption hits absolute zero
+        if power_val == 0.0:
+            self._state_value = "Off"
+            return
+
         # Map the power signature to the appropriate target operational mode
         for mode in self._modes:
             if power_val <= mode["max_watt"]:
@@ -152,4 +157,5 @@ class WattWatcherSensor(SensorEntity):
         return {
             "current_power": self._current_power,
             "power_unit": UnitOfPower.WATT,
+            "configured_modes": self._modes,
         }
