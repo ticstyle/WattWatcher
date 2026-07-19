@@ -237,32 +237,27 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return optional telemetry data elements inside the state envelope."""
-        # Convert into a clean sequence of individual line items
-        state_lines: list[str] = []
-        for i, state_item in enumerate(self._states):
+        # Map states straight into a dictionary template for clean standard UI rendering
+        state_map: dict[str, str] = {}
+        for state_item in self._states:
             max_watt_str = (
                 "Infinite"
                 if state_item["max_watt"] == float("inf")
-                else str(state_item["max_watt"])
+                else f"{state_item['max_watt']} W"
             )
-            state_lines.append(f"name: {state_item['name']}")
-            state_lines.append(f"max_watt: {max_watt_str}")
-
-            # Append a blank entry item to split blocks neatly, except for the last index row
-            if i < len(self._states) - 1:
-                state_lines.append("")
+            state_map[state_item["name"]] = max_watt_str
 
         return {
             "current_power": self.current_power,
             "source_power": self.source_power,
             "power_unit": UnitOfPower.WATT,
             "source_entity": self._power_sensor,
-            "configured_states": state_lines,
+            "configured_states": state_map,
         }
 
 
 class WattWatcherPowerSensor(SensorEntity):
-    """Subordinate entity rendering current smoothed numeric usage explicitly."""
+    """Subordinate entity rendering current smoothed numerical usage explicitly."""
 
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.POWER
