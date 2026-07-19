@@ -11,6 +11,7 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 import homeassistant.helpers.config_validation as cv
 
@@ -28,6 +29,7 @@ def validate_modes(user_input: dict[str, Any]) -> str | None:
     last_watt = -1.0
 
     for i in range(1, MAX_MODES + 1):
+        # Flattened check because section fields are unpacked into the root input dict
         name_key = f"mode_{i}_name"
         watt_key = f"mode_{i}_max_watt"
 
@@ -64,12 +66,10 @@ def create_schema(
         )
     )
 
-    # Dynamic generation of the 6 fixed mode fields using NumberSelector
+    # Dynamic generation of the 6 fixed mode fields inside visual layout sections
     for i in range(1, MAX_MODES + 1):
         name_key = f"mode_{i}_name"
         watt_key = f"mode_{i}_max_watt"
-
-        schema[vol.Optional(name_key, default=defaults.get(name_key, ""))] = cv.string
 
         # Build number selector configuration for float input
         num_config = selector.NumberSelectorConfig(
@@ -78,13 +78,25 @@ def create_schema(
             unit_of_measurement="W",
         )
 
+        sub_fields: dict[vol.Marker, Any] = {
+            vol.Optional(name_key, default=defaults.get(name_key, "")): cv.string
+        }
+
         default_watt = defaults.get(watt_key)
         if default_watt is not None:
-            schema[vol.Optional(watt_key, default=float(default_watt))] = (
+            sub_fields[vol.Optional(watt_key, default=float(default_watt))] = (
                 selector.NumberSelector(num_config)
             )
         else:
-            schema[vol.Optional(watt_key)] = selector.NumberSelector(num_config)
+            sub_fields[vol.Optional(watt_key)] = selector.NumberSelector(num_config)
+
+        # Bind using the core framework section layout to handle grouping and collapse behaviors
+        schema[vol.Optional(f"mode_{i}_section")] = section(
+            vol.Schema(sub_fields),
+            {
+                "collapsed": i > 3
+            },  # Expand the first 3 by default, keep higher entries clean
+        )
 
     return vol.Schema(schema)
 

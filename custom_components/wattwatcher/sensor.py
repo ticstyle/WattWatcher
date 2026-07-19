@@ -38,7 +38,7 @@ async def async_setup_entry(
             modes.append({"name": mode_name, "max_watt": float(mode_watt)})
 
     # Generate a clean object ID slug for a predictable entity_id
-    slug = name.lower().replace(" ", "_")
+    slug = name.lower().replace(" ", "_").replace("-", "_")
     suggested_object_id = f"wattwatcher_{slug}"
 
     async_add_entities(
@@ -72,6 +72,9 @@ class WattWatcherSensor(SensorEntity):
         self._power_sensor = power_sensor
         self._modes = modes
         self._attr_suggested_object_id = suggested_object_id
+
+        # Strictly force the exact entity_id layout required
+        self.entity_id = f"sensor.{suggested_object_id}"
 
         # Setting a blank string forces the entity name to match the device name exactly
         self._attr_name = ""
