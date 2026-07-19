@@ -1,4 +1,5 @@
 """Sensor platform for WattWatcher integration."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -127,7 +128,9 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
             if "source_power" in last_state.attributes:
                 saved_power = last_state.attributes["source_power"]
                 if saved_power is not None:
-                    self._power_history = [(dt_util.utcnow().timestamp(), float(saved_power))]
+                    self._power_history = [
+                        (dt_util.utcnow().timestamp(), float(saved_power))
+                    ]
 
         if initial_state := self.hass.states.get(self._power_sensor):
             self._update_power_state(initial_state.state, use_debounce=False)
@@ -190,7 +193,9 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
             self._power_history = active
 
             # Evaluate rolling average across the active time array explicitly
-            mean_power = sum(w for _, w in self._power_history) / len(self._power_history)
+            mean_power = sum(w for _, w in self._power_history) / len(
+                self._power_history
+            )
 
         self.current_power = round(mean_power, 2)
         self._notify_listeners()
@@ -303,4 +308,3 @@ class WattWatcherStateLimitSensor(SensorEntity):
             manufacturer="ticstyle",
             model="WattWatcher",
         )
-        
