@@ -1,4 +1,5 @@
 """Sensor platform for WattWatcher integration."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -58,7 +59,9 @@ async def async_setup_entry(
 
     # Safely purge any old limit entities that are no longer part of the active configuration names
     entity_reg = er.async_get(hass)
-    existing_entries = er.async_entries_for_config_entry(entity_reg, config_entry.entry_id)
+    existing_entries = er.async_entries_for_config_entry(
+        entity_reg, config_entry.entry_id
+    )
     for entity_entry in existing_entries:
         if "_limit_" in entity_entry.unique_id or "_slot_" in entity_entry.unique_id:
             if entity_entry.unique_id not in active_unique_ids:
@@ -205,7 +208,9 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
 
             active.append((now, power_val))
             self._power_history = active
-            mean_power = sum(w for _, w in self._power_history) / len(self._power_history)
+            mean_power = sum(w for _, w in self._power_history) / len(
+                self._power_history
+            )
 
         self.current_power = round(mean_power, 2)
         self._notify_listeners()
@@ -311,7 +316,7 @@ class WattWatcherStateLimitSensor(SensorEntity):
         self.entity_id = f"sensor.{suggested_object_id}"
         self._state_label = state_label
         self._attr_native_value = limit_watt
-        
+
         # Tie unique_id directly to the name slug to achieve uniform pure text layout ids
         self._attr_unique_id = f"{entry_id}_limit_{state_slug}"
 
