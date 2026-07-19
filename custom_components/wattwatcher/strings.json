@@ -3,90 +3,98 @@
     "step": {
       "user": {
         "title": "Configure WattWatcher",
-        "description": "Select a power sensor and define your operational modes. Modes are evaluated in sequence (Mode 1 to 6). Each mode activates when the power is below or equal to its Max Watt threshold.",
+        "description": "Select a power sensor and define your operational states. States are evaluated in sequence. State 1 has a pre-defined fallback default.",
         "data": {
           "name": "Device Name (e.g., PC, Washing Machine)",
           "power_sensor": "Source Power Sensor",
-          "mode_1_section": "Mode 1 (Lowest Range - e.g., Standby/Off)",
-          "mode_1_name": "Mode 1 Name",
-          "mode_1_max_watt": "Mode 1 Max Watt (Active from 0W up to this value)",
-          "mode_2_section": "Mode 2 (Next Range - e.g., Idle)",
-          "mode_2_name": "Mode 2 Name",
-          "mode_2_max_watt": "Mode 2 Max Watt (Must be higher than Mode 1)",
-          "mode_3_section": "Mode 3 (Next Range - e.g., Load/Gaming)",
-          "mode_3_name": "Mode 3 Name",
-          "mode_3_max_watt": "Mode 3 Max Watt (Leave empty if this is your final highest mode)",
-          "mode_4_section": "Mode 4 (Optional Range)",
-          "mode_4_name": "Mode 4 Name",
-          "mode_4_max_watt": "Mode 4 Max Watt (Leave empty if this is your final highest mode)",
-          "mode_5_section": "Mode 5 (Optional Range)",
-          "mode_5_name": "Mode 5 Name",
-          "mode_5_max_watt": "Mode 5 Max Watt (Leave empty if this is your final highest mode)",
-          "mode_6_section": "Mode 6 (Highest Optional Range)",
-          "mode_6_name": "Mode 6 Name",
-          "mode_6_max_watt": "Mode 6 Max Watt (Catches everything above the previous threshold)"
+          "state_1_section": "State 1 (Lowest Range)",
+          "state_1_name": "State 1 Name",
+          "state_1_max_watt": "State 1 Max Watt",
+          "state_2_section": "State 2 (Next Range)",
+          "state_2_name": "State 2 Name",
+          "state_2_max_watt": "State 2 Max Watt",
+          "add_more_states": "I want to add an additional state"
+        }
+      },
+      "add_state": {
+        "title": "Add State {index}",
+        "description": "Configure the thresholds for the next operational range layer.",
+        "data": {
+          "state_3_section": "State 3 Layout",
+          "state_3_name": "State 3 Name",
+          "state_3_max_watt": "State 3 Max Watt",
+          "state_4_section": "State 4 Layout",
+          "state_4_name": "State 4 Name",
+          "state_4_max_watt": "State 4 Max Watt",
+          "state_5_section": "State 5 Layout",
+          "state_5_name": "State 5 Name",
+          "state_5_max_watt": "State 5 Max Watt",
+          "state_6_section": "State 6 Layout",
+          "state_6_name": "State 6 Name",
+          "state_6_max_watt": "State 6 Max Watt",
+          "add_more_states": "I want to add an additional state"
         }
       },
       "reconfigure": {
         "title": "Reconfigure WattWatcher",
-        "description": "Adjust the source power sensor or fine-tune the maximum watt thresholds for your operational modes.",
+        "description": "Adjust the source power sensor or fine-tune the maximum watt thresholds for your operational states.",
         "data": {
           "power_sensor": "Source Power Sensor",
-          "mode_1_section": "Mode 1 (Lowest Range)",
-          "mode_1_name": "Mode 1 Name",
-          "mode_1_max_watt": "Mode 1 Max Watt",
-          "mode_2_section": "Mode 2 (Next Range)",
-          "mode_2_name": "Mode 2 Name",
-          "mode_2_max_watt": "Mode 2 Max Watt",
-          "mode_3_section": "Mode 3 (Next Range)",
-          "mode_3_name": "Mode 3 Name",
-          "mode_3_max_watt": "Mode 3 Max Watt",
-          "mode_4_section": "Mode 4 (Optional Range)",
-          "mode_4_name": "Mode 4 Name",
-          "mode_4_max_watt": "Mode 4 Max Watt",
-          "mode_5_section": "Mode 5 (Optional Range)",
-          "mode_5_name": "Mode 5 Name",
-          "mode_5_max_watt": "Mode 5 Max Watt",
-          "mode_6_section": "Mode 6 (Highest Optional Range)",
-          "mode_6_name": "Mode 6 Name",
-          "mode_6_max_watt": "Mode 6 Max Watt"
+          "state_1_section": "State 1 (Lowest Range)",
+          "state_1_name": "State 1 Name",
+          "state_1_max_watt": "State 1 Max Watt",
+          "state_2_section": "State 2 (Next Range)",
+          "state_2_name": "State 2 Name",
+          "state_2_max_watt": "State 2 Max Watt",
+          "state_3_section": "State 3 Layout",
+          "state_3_name": "State 3 Name",
+          "state_3_max_watt": "State 3 Max Watt",
+          "state_4_section": "State 4 Layout",
+          "state_4_name": "State 4 Name",
+          "state_4_max_watt": "State 4 Max Watt",
+          "state_5_section": "State 5 Layout",
+          "state_5_name": "State 5 Name",
+          "state_5_max_watt": "State 5 Max Watt",
+          "state_6_section": "State 6 Layout",
+          "state_6_name": "State 6 Name",
+          "state_6_max_watt": "State 6 Max Watt"
         }
       }
     },
     "error": {
-      "overlapping_thresholds": "Invalid order! Each Max Watt threshold must be strictly higher than the previous one (e.g., Mode 2 Watt > Mode 1 Watt)."
+      "overlapping_thresholds": "Invalid order! Each Max Watt threshold must be strictly higher than the previous one."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "WattWatcher Options",
-        "description": "Adjust the source power sensor or fine-tune the maximum watt thresholds for your operational modes.",
+        "description": "Adjust the source power sensor or fine-tune the maximum watt thresholds for your operational states.",
         "data": {
           "power_sensor": "Source Power Sensor",
-          "mode_1_section": "Mode 1 (Lowest Range)",
-          "mode_1_name": "Mode 1 Name",
-          "mode_1_max_watt": "Mode 1 Max Watt",
-          "mode_2_section": "Mode 2 (Next Range)",
-          "mode_2_name": "Mode 2 Name",
-          "mode_2_max_watt": "Mode 2 Max Watt",
-          "mode_3_section": "Mode 3 (Next Range)",
-          "mode_3_name": "Mode 3 Name",
-          "mode_3_max_watt": "Mode 3 Max Watt",
-          "mode_4_section": "Mode 4 (Optional Range)",
-          "mode_4_name": "Mode 4 Name",
-          "mode_4_max_watt": "Mode 4 Max Watt",
-          "mode_5_section": "Mode 5 (Optional Range)",
-          "mode_5_name": "Mode 5 Name",
-          "mode_5_max_watt": "Mode 5 Max Watt",
-          "mode_6_section": "Mode 6 (Highest Optional Range)",
-          "mode_6_name": "Mode 6 Name",
-          "mode_6_max_watt": "Mode 6 Max Watt"
+          "state_1_section": "State 1 (Lowest Range)",
+          "state_1_name": "State 1 Name",
+          "state_1_max_watt": "State 1 Max Watt",
+          "state_2_section": "State 2 (Next Range)",
+          "state_2_name": "State 2 Name",
+          "state_2_max_watt": "State 2 Max Watt",
+          "state_3_section": "State 3 Layout",
+          "state_3_name": "State 3 Name",
+          "state_3_max_watt": "State 3 Max Watt",
+          "state_4_section": "State 4 Layout",
+          "state_4_name": "State 4 Name",
+          "state_4_max_watt": "State 4 Max Watt",
+          "state_5_section": "State 5 Layout",
+          "state_5_name": "State 5 Name",
+          "state_5_max_watt": "State 5 Max Watt",
+          "state_6_section": "State 6 Layout",
+          "state_6_name": "State 6 Name",
+          "state_6_max_watt": "State 6 Max Watt"
         }
       }
     },
     "error": {
-      "overlapping_thresholds": "Invalid order! Each Max Watt threshold must be strictly higher than the previous one (e.g., Mode 2 Watt > Mode 1 Watt)."
+      "overlapping_thresholds": "Invalid order! Each Max Watt threshold must be strictly higher than the previous one."
     }
   }
 }

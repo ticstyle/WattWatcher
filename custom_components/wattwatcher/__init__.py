@@ -8,19 +8,19 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 
-# We only focus on the sensor platform
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up WattWatcher from a config entry."""
-    # Store the entry data and options for our platforms to access
+    # Store runtime entry reference explicitly to allow predictable cleanups
     hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = entry
 
     # Forward the setup to the sensor platform
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Register a listener to handle runtime options/reconfigure changes updates
+    # Register the update listener to trigger reloads when options change (spawns the cogwheel)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     return True
