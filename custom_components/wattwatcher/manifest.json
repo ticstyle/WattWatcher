@@ -6,5 +6,5 @@
   "documentation": "https://github.com/ticstyle/wattwatcher",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/ticstyle/wattwatcher/issues",
-  "version": "1.0.1"
+  "version": "1.0.2"
 }
