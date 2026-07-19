@@ -212,9 +212,7 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
         self._pending_state_value = target_state
 
         self._debounce_unsub = async_call_later(
-            self.hass,
-            timedelta(seconds=FLUCTUATION_DELAY),
-            self._async_commit_state,
+            self.hass, timedelta(seconds=FLUCTUATION_DELAY), self._async_commit_state
         )
 
     def _notify_listeners(self) -> None:
@@ -239,30 +237,32 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return optional telemetry data elements inside the state envelope."""
-        # Build a clean multi-line string block with pure newline characters for formatting
-        state_lines = []
-        for state_item in self._states:
+        # Convert into a clean sequence of individual line items
+        state_lines: list[str] = []
+        for i, state_item in enumerate(self._states):
             max_watt_str = (
                 "Infinite"
                 if state_item["max_watt"] == float("inf")
                 else str(state_item["max_watt"])
             )
-            state_lines.append(f"name: {state_item['name']}\nmax_watt: {max_watt_str}")
-
-        # Join the text blocks using a double newline to guarantee a completely empty row space
-        formatted_states = "\n\n".join(state_lines)
+            state_lines.append(f"name: {state_item['name']}")
+            state_lines.append(f"max_watt: {max_watt_str}")
+            
+            # Append a blank entry item to split blocks neatly, except for the last index row
+            if i < len(self._states) - 1:
+                state_lines.append("")
 
         return {
             "current_power": self.current_power,
             "source_power": self.source_power,
             "power_unit": UnitOfPower.WATT,
             "source_entity": self._power_sensor,
-            "configured_states": formatted_states,
+            "configured_states": state_lines,
         }
 
 
 class WattWatcherPowerSensor(SensorEntity):
-    """Subordinate entity rendering current smoothed numerical usage explicitly."""
+    """Subordinate entity rendering current smoothed numeric usage explicitly."""
 
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.POWER
