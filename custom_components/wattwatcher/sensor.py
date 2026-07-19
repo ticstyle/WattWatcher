@@ -1,7 +1,7 @@
 """Sensor platform for WattWatcher integration."""
-
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
@@ -10,11 +10,13 @@ from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN, UnitOfPower
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.event import async_track_state_change_event, async_call_later
 
 from .const import DOMAIN
 
 MAX_STATES = 6
+# 5 seconds delay stabilizes quick power oscillations perfectly
+FLUCTUATION_DELAY = 5
 
 
 async def async_setup_entry(
@@ -23,24 +25,20 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the WattWatcher sensor platform."""
-    # Combine data and options to support runtime adjustments seamlessly
     config = {**config_entry.data, **config_entry.options}
-
+    
     name: str = config["name"]
     power_sensor: str = config["power_sensor"]
-
-    # Extract and structure the configured states
+    
     states = []
     for i in range(1, MAX_STATES + 1):
         state_name = config.get(f"state_{i}_name")
         state_watt = config.get(f"state_{i}_max_watt")
-
+        
         if state_name:
-            # If name is present but watt is omitted, default to infinity to catch all upper values
             val_watt = float(state_watt) if state_watt is not None else float("inf")
             states.append({"name": state_name, "max_watt": val_watt})
 
-    # Generate a clean object ID slug for a predictable entity_id
     slug = name.lower().replace(" ", "_").replace("-", "_")
     suggested_object_id = f"wattwatcher_{slug}"
 
@@ -58,7 +56,7 @@ async def async_setup_entry(
 
 
 class WattWatcherSensor(SensorEntity):
-    """Representation of a WattWatcher power state sensor."""
+    """Representation of a WattWatcher power state sensor with debouncing stabilization."""
 
     _attr_has_entity_name = True
 
@@ -75,24 +73,20 @@ class WattWatcherSensor(SensorEntity):
         self._power_sensor = power_sensor
         self._states = states
         self._attr_suggested_object_id = suggested_object_id
-
-        # Strictly force the exact entity_id layout required
+        
         self.entity_id = f"sensor.{suggested_object_id}"
-
-        # Setting a blank string forces the entity name to match the device name exactly
         self._attr_name = ""
         self._state_value: str | None = None
+        self._pending_state_value: str | None = None
         self._current_power: float | None = None
+        self._debounce_unsub: Any = None
 
-        # Build the shared device identity block
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry_id)},
             name=name,
             manufacturer="ticstyle",
             model="WattWatcher",
         )
-
-        # Unique ID based on the entry ID ensures uniqueness across multiple instances
         self._attr_unique_id = f"{entry_id}_state_sensor"
 
     @property
@@ -104,11 +98,10 @@ class WattWatcherSensor(SensorEntity):
         """Handle entity registry lifecycle hooks."""
         await super().async_added_to_hass()
 
-        # Fetch the initial state of the source sensor right away if available
         if initial_state := self.hass.states.get(self._power_sensor):
-            self._update_power_state(initial_state.state)
+            # Parse target layout immediately on startup without debounce delay
+            self._update_power_state(initial_state.state, use_debounce=False)
 
-        # Start tracking real-time state mutations on the source power sensor
         self.async_on_remove(
             async_track_state_change_event(
                 self.hass, [self._power_sensor], self._handle_state_change
@@ -119,40 +112,77 @@ class WattWatcherSensor(SensorEntity):
     def _handle_state_change(self, event: Event[EventStateChangedData]) -> None:
         """Process event updates broadcasted from the monitored sensor."""
         if (new_state := event.data.get("new_state")) is not None:
-            self._update_power_state(new_state.state)
-            self.async_write_ha_state()
+            self._update_power_state(new_state.state, use_debounce=True)
 
-    def _update_power_state(self, state_value: str) -> None:
-        """Evaluate the raw state value against the sorted state thresholds."""
-        if state_value in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+    def _update_power_state(self, raw_state: str, use_debounce: bool) -> None:
+        """Evaluate the raw state value against thresholds with optional debouncing."""
+        if raw_state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            self._cancel_debounce()
             self._state_value = None
             self._current_power = None
+            self.async_write_ha_state()
             return
 
         try:
-            power_val = float(state_value)
+            power_val = float(raw_state)
             self._current_power = power_val
         except ValueError:
+            self._cancel_debounce()
             self._state_value = None
             self._current_power = None
+            self.async_write_ha_state()
             return
 
-        # Explicit requirement: hardcode "Off" state if consumption hits absolute zero
+        # Determine target state matching the power signature
+        target_state: str | None = None
         if power_val == 0.0:
-            self._state_value = "Off"
+            target_state = "Off"
+        else:
+            for state_item in self._states:
+                if power_val <= state_item["max_watt"]:
+                    target_state = state_item["name"]
+                    break
+            if target_state ==  None and self._states:
+                target_state = self._states[-1]["name"]
+
+        if not use_debounce:
+            self._cancel_debounce()
+            self._state_value = target_state
+            self.async_write_ha_state()
             return
 
-        # Map the power signature to the appropriate target operational state
-        for state_item in self._states:
-            if power_val <= state_item["max_watt"]:
-                self._state_value = state_item["name"]
-                return
+        # Debounce evaluation logic block
+        if target_state == self._state_value:
+            self._cancel_debounce()
+            return
 
-        # Default to the absolute highest configured state if it exceeds all intermediate steps
-        if self._states:
-            self._state_value = self._states[-1]["name"]
-        else:
-            self._state_value = None
+        if target_state == self._pending_state_value:
+            # Already waiting for this specific state to commit
+            return
+
+        self._cancel_debounce()
+        self._pending_state_value = target_state
+        
+        # Fire delayed state switch execution hook
+        self._debounce_unsub = async_call_later(
+            self.hass,
+            timedelta(seconds=FLUCTUATION_DELAY),
+            self._async_commit_state
+        )
+
+    async def _async_commit_state(self, _now: Any) -> None:
+        """Commit the verified stable state update onto the entity platform."""
+        self._state_value = self._pending_state_value
+        self._pending_state_value = None
+        self._debounce_unsub = None
+        self.async_write_ha_state()
+
+    def _cancel_debounce(self) -> None:
+        """Safely clear outstanding state change timers."""
+        if self._debounce_unsub:
+            self._debounce_unsub()
+            self._debounce_unsub = None
+        self._pending_state_value = None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
