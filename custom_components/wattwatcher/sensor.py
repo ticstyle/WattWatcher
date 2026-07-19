@@ -1,5 +1,4 @@
 """Sensor platform for WattWatcher integration."""
-
 from __future__ import annotations
 
 from datetime import timedelta
@@ -212,7 +211,9 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
         self._pending_state_value = target_state
 
         self._debounce_unsub = async_call_later(
-            self.hass, timedelta(seconds=FLUCTUATION_DELAY), self._async_commit_state
+            self.hass,
+            timedelta(seconds=FLUCTUATION_DELAY),
+            self._async_commit_state,
         )
 
     def _notify_listeners(self) -> None:
@@ -237,16 +238,18 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return optional telemetry data elements inside the state envelope."""
-        formatted_states = [
-            {
-                "name": state_item["name"],
-                "max_watt": "Infinite"
+        # Build a clean multi-line string block with pure newline characters for formatting
+        state_lines = []
+        for state_item in self._states:
+            max_watt_str = (
+                "Infinite"
                 if state_item["max_watt"] == float("inf")
-                else state_item["max_watt"],
-                "": "",
-            }
-            for state_item in self._states
-        ]
+                else str(state_item["max_watt"])
+            )
+            state_lines.append(f"name: {state_item['name']}\nmax_watt: {max_watt_str}")
+
+        # Join the text blocks using a double newline to guarantee a completely empty row space
+        formatted_states = "\n\n".join(state_lines)
 
         return {
             "current_power": self.current_power,
@@ -258,7 +261,7 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
 
 
 class WattWatcherPowerSensor(SensorEntity):
-    """Subordinate entity rendering current smoothed numeric usage explicitly."""
+    """Subordinate entity rendering current smoothed numerical usage explicitly."""
 
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.POWER
