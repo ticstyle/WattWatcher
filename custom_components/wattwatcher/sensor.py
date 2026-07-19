@@ -1,5 +1,4 @@
 """Sensor platform for WattWatcher integration."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -47,26 +46,19 @@ async def async_setup_entry(
     slug = name.lower().replace(" ", "_").replace("-", "_")
     suggested_object_id = f"wattwatcher_{slug}"
 
-    # Calculate active unique IDs to clean up orphaned entities
-    active_unique_ids: set[str] = {
-        f"{config_entry.entry_id}_state_sensor",
-        f"{config_entry.entry_id}_current_power_diagnostic",
-    }
-
+    # Generate the exact unique IDs that are valid for the active dynamic entities
+    active_limit_unique_ids: set[str] = set()
     for state_item in states:
         if state_item["max_watt"] != float("inf"):
-            active_unique_ids.add(
-                f"{config_entry.entry_id}_limit_{state_item['name'].lower()}"
-            )
+            active_limit_unique_ids.add(f"{config_entry.entry_id}_limit_{state_item['name'].lower()}")
 
-    # Purge any obsolete entities left behind from a reconfiguration
+    # Safely purge any old limit entities that are no longer part of the current active configuration
     entity_reg = er.async_get(hass)
-    existing_entries = er.async_entries_for_config_entry(
-        entity_reg, config_entry.entry_id
-    )
+    existing_entries = er.async_entries_for_config_entry(entity_reg, config_entry.entry_id)
     for entity_entry in existing_entries:
-        if entity_entry.unique_id not in active_unique_ids:
-            entity_reg.async_remove(entity_entry.entity_id)
+        if "_limit_" in entity_entry.unique_id:
+            if entity_entry.unique_id not in active_limit_unique_ids:
+                entity_reg.async_remove(entity_entry.entity_id)
 
     main_sensor = WattWatcherSensor(
         config_entry.entry_id,
