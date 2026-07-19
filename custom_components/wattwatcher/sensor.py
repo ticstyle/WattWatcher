@@ -1,5 +1,4 @@
 """Sensor platform for WattWatcher integration."""
-
 from __future__ import annotations
 
 from datetime import timedelta
@@ -27,15 +26,15 @@ async def async_setup_entry(
 ) -> None:
     """Set up the WattWatcher sensor platform."""
     config = {**config_entry.data, **config_entry.options}
-
+    
     name: str = config["name"]
     power_sensor: str = config["power_sensor"]
-
+    
     states = []
     for i in range(1, MAX_STATES + 1):
         state_name = config.get(f"state_{i}_name")
         state_watt = config.get(f"state_{i}_max_watt")
-
+        
         if state_name:
             val_watt = float(state_watt) if state_watt is not None else float("inf")
             states.append({"name": state_name, "max_watt": val_watt})
@@ -74,12 +73,14 @@ class WattWatcherSensor(SensorEntity):
         self._power_sensor = power_sensor
         self._states = states
         self._attr_suggested_object_id = suggested_object_id
-
+        
         self.entity_id = f"sensor.{suggested_object_id}"
         self._attr_name = ""
         self._state_value: str | None = None
         self._pending_state_value: str | None = None
         self._current_power: float | None = None
+        self._source_power: float | None = None
+        self._last_raw_power: float | None = None
         self._debounce_unsub: Any = None
 
         self._attr_device_info = DeviceInfo(
@@ -121,26 +122,39 @@ class WattWatcherSensor(SensorEntity):
             self._cancel_debounce()
             self._state_value = None
             self._current_power = None
+            self._source_power = None
+            self._last_raw_power = None
             self.async_write_ha_state()
             return
 
         try:
             power_val = float(raw_state)
-            self._current_power = power_val
+            self._source_power = power_val
         except ValueError:
             self._cancel_debounce()
             self._state_value = None
             self._current_power = None
+            self._source_power = None
+            self._last_raw_power = None
             self.async_write_ha_state()
             return
 
-        # Determine target state matching the power signature
+        # Calculate the rolling mean of the two last reported values
+        if self._last_raw_power is None:
+            mean_power = power_val
+        else:
+            mean_power = (power_val + self._last_raw_power) / 2
+
+        self._last_raw_power = power_val
+        self._current_power = round(mean_power, 2)
+
+        # Determine target state matching the power signature using the calculated mean
         target_state: str | None = None
-        if power_val == 0.0:
+        if mean_power == 0.0:
             target_state = "Off"
         else:
             for state_item in self._states:
-                if power_val <= state_item["max_watt"]:
+                if mean_power <= state_item["max_watt"]:
                     target_state = state_item["name"]
                     break
             if target_state is None and self._states:
@@ -163,10 +177,12 @@ class WattWatcherSensor(SensorEntity):
 
         self._cancel_debounce()
         self._pending_state_value = target_state
-
+        
         # Fire delayed state switch execution hook
         self._debounce_unsub = async_call_later(
-            self.hass, timedelta(seconds=FLUCTUATION_DELAY), self._async_commit_state
+            self.hass,
+            timedelta(seconds=FLUCTUATION_DELAY),
+            self._async_commit_state
         )
 
     async def _async_commit_state(self, _now: Any) -> None:
@@ -186,8 +202,19 @@ class WattWatcherSensor(SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return optional telemetry data elements inside the state envelope."""
+        # Clean up infinite thresholds for better visibility in the frontend
+        formatted_states = [
+            {
+                "name": state_item["name"],
+                "max_watt": "Infinite" if state_item["max_watt"] == float("inf") else state_item["max_watt"]
+            }
+            for state_item in self._states
+        ]
+
         return {
             "current_power": self._current_power,
+            "source_power": self._source_power,
             "power_unit": UnitOfPower.WATT,
-            "configured_states": self._states,
+            "source_entity": self._power_sensor,
+            "configured_states": formatted_states,
         }
