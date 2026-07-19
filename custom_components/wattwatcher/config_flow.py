@@ -1,4 +1,5 @@
 """Config flow for WattWatcher integration."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -9,7 +10,6 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     OptionsFlow,
 )
-from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 import homeassistant.helpers.config_validation as cv
@@ -22,21 +22,21 @@ DEFAULT_STATES = ["Standby", "Idle", "Running", "Gaming", "Working", "Going", "O
 
 def validate_states(user_input: dict[str, Any]) -> str | None:
     """Validate that configured states are in strictly ascending order.
-    
+
     Returns an error key if invalid, otherwise None.
     """
     last_watt = -1.0
-    
+
     for i in range(1, MAX_STATES + 1):
         name = user_input.get(f"state_{i}_name")
         watt = user_input.get(f"state_{i}_max_watt")
-        
+
         if name and watt is not None:
             current_watt = float(watt)
             if current_watt <= last_watt:
                 return "overlapping_thresholds"
             last_watt = current_watt
-            
+
     return None
 
 
@@ -44,25 +44,22 @@ def flatten_section_input(user_input: dict[str, Any] | None) -> dict[str, Any]:
     """Extract and flatten data fields packed inside UI layout sections."""
     if not user_input:
         return {}
-        
+
     flat_data = {}
     for key, value in user_input.items():
         if key.endswith("_section") and isinstance(value, dict):
             flat_data.update(value)
         else:
             flat_data[key] = value
-            
+
     return flat_data
 
 
-def create_state_fields(
-    i: int, 
-    defaults: dict[str, Any]
-) -> dict[vol.Marker, Any]:
+def create_state_fields(i: int, defaults: dict[str, Any]) -> dict[vol.Marker, Any]:
     """Helper to generate standard schema fields for a single state section."""
     name_key = f"state_{i}_name"
     watt_key = f"state_{i}_max_watt"
-    
+
     # Configure default values specifically for State 1 on first startup
     default_name = defaults.get(name_key, "Standby" if i == 1 else "")
     default_watt = defaults.get(watt_key)
@@ -74,24 +71,30 @@ def create_state_fields(
         step="any",
         unit_of_measurement="W",
     )
-    
+
     name_config = selector.SelectSelectorConfig(
         options=DEFAULT_STATES,
         custom_value=True,
         mode=selector.SelectSelectorMode.DROPDOWN,
     )
-    
+
     sub_fields: dict[vol.Marker, Any] = {
-        vol.Optional(name_key, default=default_name): selector.SelectSelector(name_config)
+        vol.Optional(name_key, default=default_name): selector.SelectSelector(
+            name_config
+        )
     }
-    
+
     if default_watt is not None:
-        sub_fields[vol.Optional(watt_key, default=float(default_watt))] = selector.NumberSelector(num_config)
+        sub_fields[vol.Optional(watt_key, default=float(default_watt))] = (
+            selector.NumberSelector(num_config)
+        )
     else:
         sub_fields[vol.Optional(watt_key)] = selector.NumberSelector(num_config)
-        
+
     return {
-        vol.Optional(f"state_{i}_section"): section(vol.Schema(sub_fields), {"collapsed": False})
+        vol.Optional(f"state_{i}_section"): section(
+            vol.Schema(sub_fields), {"collapsed": False}
+        )
     }
 
 
@@ -114,11 +117,11 @@ class WattWatcherConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             self._accumulated_data.update(flat_input)
-            
+
             # If the user wants to add more states, route to the dynamic sub-step
             if flat_input.get("add_more_states"):
                 return await self.async_step_add_state()
-                
+
             if error := validate_states(self._accumulated_data):
                 errors["base"] = error
             else:
@@ -130,15 +133,17 @@ class WattWatcherConfigFlow(ConfigFlow, domain=DOMAIN):
 
         schema: dict[vol.Marker, Any] = {
             vol.Required("name", default=flat_input.get("name", "")): cv.string,
-            vol.Required("power_sensor", default=flat_input.get("power_sensor", "")): selector.EntitySelector(
+            vol.Required(
+                "power_sensor", default=flat_input.get("power_sensor", "")
+            ): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="sensor", device_class="power")
             ),
         }
-        
+
         # Populate only State 1 and State 2 initially
         schema.update(create_state_fields(1, flat_input))
         schema.update(create_state_fields(2, flat_input))
-        
+
         # Toggle checkbox allowing progression to State 3
         schema[vol.Optional("add_more_states", default=False)] = cv.boolean
 
@@ -158,11 +163,11 @@ class WattWatcherConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             self._accumulated_data.update(flat_input)
-            
+
             if flat_input.get("add_more_states") and idx < MAX_STATES:
                 self._current_setup_index += 1
                 return await self.async_step_add_state()
-                
+
             if error := validate_states(self._accumulated_data):
                 errors["base"] = error
             else:
@@ -175,7 +180,7 @@ class WattWatcherConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
 
         schema = create_state_fields(idx, flat_input)
-        
+
         # Append downstream checkbox if there are remaining slots left
         if idx < MAX_STATES:
             schema[vol.Optional("add_more_states", default=False)] = cv.boolean
@@ -207,11 +212,13 @@ class WattWatcherConfigFlow(ConfigFlow, domain=DOMAIN):
 
         current_config = {**entry.data, **entry.options}
         schema: dict[vol.Marker, Any] = {
-            vol.Required("power_sensor", default=current_config.get("power_sensor", "")): selector.EntitySelector(
+            vol.Required(
+                "power_sensor", default=current_config.get("power_sensor", "")
+            ): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="sensor", device_class="power")
             )
         }
-        
+
         for i in range(1, MAX_STATES + 1):
             schema.update(create_state_fields(i, current_config))
 
@@ -240,11 +247,13 @@ class WattWatcherOptionsFlow(OptionsFlow):
 
         current_config = {**self.config_entry.data, **self.config_entry.options}
         schema: dict[vol.Marker, Any] = {
-            vol.Required("power_sensor", default=current_config.get("power_sensor", "")): selector.EntitySelector(
+            vol.Required(
+                "power_sensor", default=current_config.get("power_sensor", "")
+            ): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="sensor", device_class="power")
             )
         }
-        
+
         for i in range(1, MAX_STATES + 1):
             schema.update(create_state_fields(i, current_config))
 
