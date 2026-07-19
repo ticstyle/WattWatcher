@@ -1,8 +1,6 @@
 """Sensor platform for WattWatcher integration."""
-
 from __future__ import annotations
 
-from datetime import timedelta
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -15,13 +13,13 @@ from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN, UnitOfPower
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.event import async_track_state_change_event, async_call_later
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 
 MAX_STATES = 6
-FLUCTUATION_DELAY = 5
 
 
 async def async_setup_entry(
@@ -101,11 +99,9 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
         self.entity_id = f"sensor.{suggested_object_id}"
         self._attr_name = ""
         self._state_value: str | None = None
-        self._pending_state_value: str | None = None
         self.current_power: float | None = None
         self.source_power: float | None = None
-        self._last_raw_power: float | None = None
-        self._debounce_unsub: Any = None
+        self._power_history: list[tuple[float, float]] = []
         self._listeners: list[Any] = []
 
         self._attr_device_info = DeviceInfo(
@@ -127,11 +123,11 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
 
         if last_state := await self.async_get_last_state():
             self._state_value = last_state.state
-            # Restore the previous raw power from attributes to survive restarts/reloads
+            # Seed the tracking window with restored data to keep baseline history stable
             if "source_power" in last_state.attributes:
                 saved_power = last_state.attributes["source_power"]
                 if saved_power is not None:
-                    self._last_raw_power = float(saved_power)
+                    self._power_history = [(dt_util.utcnow().timestamp(), float(saved_power))]
 
         if initial_state := self.hass.states.get(self._power_sensor):
             self._update_power_state(initial_state.state, use_debounce=False)
@@ -154,11 +150,11 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
             self._update_power_state(new_state.state, use_debounce=True)
 
     def _update_power_state(self, raw_state: str, use_debounce: bool) -> None:
-        """Evaluate the raw state value against thresholds with optional debouncing."""
+        """Evaluate the raw state value against thresholds using a 30s rolling window."""
         if raw_state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
-            self._cancel_debounce()
             self.current_power = None
             self.source_power = None
+            self._power_history.clear()
             self._notify_listeners()
             self.async_write_ha_state()
             return
@@ -167,20 +163,35 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
             power_val = float(raw_state)
             self.source_power = power_val
         except ValueError:
-            self._cancel_debounce()
             self.current_power = None
             self.source_power = None
+            self._power_history.clear()
             self._notify_listeners()
             self.async_write_ha_state()
             return
 
-        # Calculate rolling mean if we have a history, otherwise fall back to raw only on first installation
-        if self._last_raw_power is None:
-            mean_power = power_val
-        else:
-            mean_power = (power_val + self._last_raw_power) / 2
+        now = dt_util.utcnow().timestamp()
 
-        self._last_raw_power = power_val
+        if not use_debounce:
+            # Immediate baseline parsing during initial bootup setups
+            mean_power = power_val
+            self._power_history = [(now, power_val)]
+        else:
+            cutoff = now - 30
+            # Split window data arrays into expired frames and valid active frames
+            expired = [item for item in self._power_history if item[0] < cutoff]
+            active = [item for item in self._power_history if item[0] >= cutoff]
+
+            # Safety Lock: Retain the last known value if the active window is completely empty
+            if not active and expired:
+                active.append((cutoff, expired[-1][1]))
+
+            active.append((now, power_val))
+            self._power_history = active
+
+            # Evaluate rolling average across the active time array explicitly
+            mean_power = sum(w for _, w in self._power_history) / len(self._power_history)
+
         self.current_power = round(mean_power, 2)
         self._notify_listeners()
 
@@ -195,49 +206,17 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
             if target_state is None and self._states:
                 target_state = self._states[-1]["name"]
 
-        if not use_debounce:
-            self._cancel_debounce()
-            self._state_value = target_state
-            self.async_write_ha_state()
-            return
-
-        if target_state == self._state_value:
-            self._cancel_debounce()
-            return
-
-        if target_state == self._pending_state_value:
-            return
-
-        self._cancel_debounce()
-        self._pending_state_value = target_state
-
-        self._debounce_unsub = async_call_later(
-            self.hass, timedelta(seconds=FLUCTUATION_DELAY), self._async_commit_state
-        )
+        self._state_value = target_state
+        self.async_write_ha_state()
 
     def _notify_listeners(self) -> None:
         """Trigger update updates across subordinate diagnostic entities."""
         for listener in self._listeners:
             listener()
 
-    async def _async_commit_state(self, _now: Any) -> None:
-        """Commit the verified stable state update onto the entity platform."""
-        self._state_value = self._pending_state_value
-        self._pending_state_value = None
-        self._debounce_unsub = None
-        self.async_write_ha_state()
-
-    def _cancel_debounce(self) -> None:
-        """Safely clear outstanding state change timers."""
-        if self._debounce_unsub:
-            self._debounce_unsub()
-            self._debounce_unsub = None
-        self._pending_state_value = None
-
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return optional telemetry data elements inside the state envelope."""
-        # Map states straight into a dictionary template for clean standard UI rendering
         state_map: dict[str, str] = {}
         for state_item in self._states:
             max_watt_str = (
@@ -324,3 +303,4 @@ class WattWatcherStateLimitSensor(SensorEntity):
             manufacturer="ticstyle",
             model="WattWatcher",
         )
+        
