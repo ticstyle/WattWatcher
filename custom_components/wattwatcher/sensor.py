@@ -1,5 +1,4 @@
 """Sensor platform for WattWatcher integration."""
-
 from __future__ import annotations
 
 from typing import Any
@@ -25,10 +24,10 @@ async def async_setup_entry(
     """Set up the WattWatcher sensor platform."""
     # Combine data and options to support runtime adjustments seamlessly
     config = {**config_entry.data, **config_entry.options}
-
+    
     name: str = config["name"]
     power_sensor: str = config["power_sensor"]
-
+    
     # Extract and structure the configured modes
     modes = []
     for i in range(1, MAX_MODES + 1):
@@ -38,7 +37,7 @@ async def async_setup_entry(
             modes.append({"name": mode_name, "max_watt": float(mode_watt)})
 
     # Generate a clean object ID slug for a predictable entity_id
-    slug = name.lower().replace(" ", "_")
+    slug = name.lower().replace(" ", "_").replace("-", "_")
     suggested_object_id = f"wattwatcher_{slug}"
 
     async_add_entities(
@@ -72,7 +71,10 @@ class WattWatcherSensor(SensorEntity):
         self._power_sensor = power_sensor
         self._modes = modes
         self._attr_suggested_object_id = suggested_object_id
-
+        
+        # Strictly force the exact entity_id layout required
+        self.entity_id = f"sensor.{suggested_object_id}"
+        
         # Setting a blank string forces the entity name to match the device name exactly
         self._attr_name = ""
         self._state_value: str | None = None
@@ -85,7 +87,7 @@ class WattWatcherSensor(SensorEntity):
             manufacturer="ticstyle",
             model="WattWatcher",
         )
-
+        
         # Unique ID based on the entry ID ensures uniqueness across multiple instances
         self._attr_unique_id = f"{entry_id}_mode_sensor"
 
