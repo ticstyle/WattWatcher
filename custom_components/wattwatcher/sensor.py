@@ -1,5 +1,4 @@
 """Sensor platform for WattWatcher integration."""
-
 from __future__ import annotations
 
 from datetime import timedelta
@@ -12,6 +11,7 @@ from homeassistant.core import Event, EventStateChangedData, HomeAssistant, call
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event, async_call_later
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import DOMAIN
 
@@ -27,15 +27,15 @@ async def async_setup_entry(
 ) -> None:
     """Set up the WattWatcher sensor platform."""
     config = {**config_entry.data, **config_entry.options}
-
+    
     name: str = config["name"]
     power_sensor: str = config["power_sensor"]
-
+    
     states = []
     for i in range(1, MAX_STATES + 1):
         state_name = config.get(f"state_{i}_name")
         state_watt = config.get(f"state_{i}_max_watt")
-
+        
         if state_name:
             val_watt = float(state_watt) if state_watt is not None else float("inf")
             states.append({"name": state_name, "max_watt": val_watt})
@@ -56,8 +56,8 @@ async def async_setup_entry(
     )
 
 
-class WattWatcherSensor(SensorEntity):
-    """Representation of a WattWatcher power state sensor with debouncing stabilization."""
+class WattWatcherSensor(RestoreEntity, SensorEntity):
+    """Representation of a WattWatcher power state sensor with persistence and debouncing."""
 
     _attr_has_entity_name = True
 
@@ -74,7 +74,7 @@ class WattWatcherSensor(SensorEntity):
         self._power_sensor = power_sensor
         self._states = states
         self._attr_suggested_object_id = suggested_object_id
-
+        
         self.entity_id = f"sensor.{suggested_object_id}"
         self._attr_name = ""
         self._state_value: str | None = None
@@ -98,11 +98,15 @@ class WattWatcherSensor(SensorEntity):
         return self._state_value
 
     async def async_added_to_hass(self) -> None:
-        """Handle entity registry lifecycle hooks."""
+        """Handle entity registry lifecycle hooks and restore previous state."""
         await super().async_added_to_hass()
+        
+        # Restore last known state from before restart
+        if last_state := await self.async_get_last_state():
+            self._state_value = last_state.state
 
+        # Sync with current sensor data if available
         if initial_state := self.hass.states.get(self._power_sensor):
-            # Parse target layout immediately on startup without debounce delay
             self._update_power_state(initial_state.state, use_debounce=False)
 
         self.async_on_remove(
@@ -121,7 +125,7 @@ class WattWatcherSensor(SensorEntity):
         """Evaluate the raw state value against thresholds with optional debouncing."""
         if raw_state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
             self._cancel_debounce()
-            self._state_value = None
+            # Do not clear self._state_value here so it persists if sensor goes down
             self._current_power = None
             self._source_power = None
             self._last_raw_power = None
@@ -133,7 +137,7 @@ class WattWatcherSensor(SensorEntity):
             self._source_power = power_val
         except ValueError:
             self._cancel_debounce()
-            self._state_value = None
+            # Do not clear self._state_value here if update fails
             self._current_power = None
             self._source_power = None
             self._last_raw_power = None
@@ -173,15 +177,15 @@ class WattWatcherSensor(SensorEntity):
             return
 
         if target_state == self._pending_state_value:
-            # Already waiting for this specific state to commit
             return
 
         self._cancel_debounce()
         self._pending_state_value = target_state
-
-        # Fire delayed state switch execution hook
+        
         self._debounce_unsub = async_call_later(
-            self.hass, timedelta(seconds=FLUCTUATION_DELAY), self._async_commit_state
+            self.hass,
+            timedelta(seconds=FLUCTUATION_DELAY),
+            self._async_commit_state
         )
 
     async def _async_commit_state(self, _now: Any) -> None:
@@ -205,9 +209,7 @@ class WattWatcherSensor(SensorEntity):
         formatted_states = [
             {
                 "name": state_item["name"],
-                "max_watt": "Infinite"
-                if state_item["max_watt"] == float("inf")
-                else state_item["max_watt"],
+                "max_watt": "Infinite" if state_item["max_watt"] == float("inf") else state_item["max_watt"]
             }
             for state_item in self._states
         ]
