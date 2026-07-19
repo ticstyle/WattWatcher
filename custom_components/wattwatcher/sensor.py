@@ -142,7 +142,7 @@ class WattWatcherSensor(SensorEntity):
                 if power_val <= state_item["max_watt"]:
                     target_state = state_item["name"]
                     break
-            if target_state ==  None and self._states:
+            if target_state is None and self._states:
                 target_state = self._states[-1]["name"]
 
         if not use_debounce:
