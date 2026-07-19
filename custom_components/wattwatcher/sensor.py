@@ -41,28 +41,30 @@ async def async_setup_entry(
         state_watt = config.get(f"state_{i}_max_watt")
 
         if state_name:
-            val_watt = float(state_watt) if state_watt is not None else float("inf")
+            # Fallback layout: If a user leaves the field empty, automatically lock it to 9999.0W
+            val_watt = float(state_watt) if state_watt is not None else 9999.0
             states.append({"name": state_name, "max_watt": val_watt})
 
     slug = name.lower().replace(" ", "_").replace("-", "_")
     suggested_object_id = f"wattwatcher_{slug}"
 
-    # Generate the exact unique IDs that are valid for the active dynamic entities
-    active_limit_unique_ids: set[str] = set()
+    # Generate the exact unique IDs that are valid based entirely on the state names
+    active_unique_ids: set[str] = {
+        f"{config_entry.entry_id}_state_sensor",
+        f"{config_entry.entry_id}_current_power_diagnostic",
+    }
     for state_item in states:
-        if state_item["max_watt"] != float("inf"):
-            active_limit_unique_ids.add(
-                f"{config_entry.entry_id}_limit_{state_item['name'].lower()}"
-            )
+        state_slug = state_item["name"].lower().replace(" ", "_").replace("-", "_")
+        active_unique_ids.add(f"{config_entry.entry_id}_limit_{state_slug}")
 
-    # Safely purge any old limit entities that are no longer part of the current active configuration
+    # Safely purge any old limit entities that are no longer part of the active configuration names
     entity_reg = er.async_get(hass)
     existing_entries = er.async_entries_for_config_entry(
         entity_reg, config_entry.entry_id
     )
     for entity_entry in existing_entries:
-        if "_limit_" in entity_entry.unique_id:
-            if entity_entry.unique_id not in active_limit_unique_ids:
+        if "_limit_" in entity_entry.unique_id or "_slot_" in entity_entry.unique_id:
+            if entity_entry.unique_id not in active_unique_ids:
                 entity_reg.async_remove(entity_entry.entity_id)
 
     main_sensor = WattWatcherSensor(
@@ -82,17 +84,17 @@ async def async_setup_entry(
     )
 
     for state_item in states:
-        if state_item["max_watt"] != float("inf"):
-            state_slug = state_item["name"].lower().replace(" ", "_").replace("-", "_")
-            entities.append(
-                WattWatcherStateLimitSensor(
-                    config_entry.entry_id,
-                    name,
-                    state_item["name"],
-                    state_item["max_watt"],
-                    f"{suggested_object_id}_{state_slug}_limit",
-                )
+        state_slug = state_item["name"].lower().replace(" ", "_").replace("-", "_")
+        entities.append(
+            WattWatcherStateLimitSensor(
+                config_entry.entry_id,
+                name,
+                state_item["name"],
+                state_item["max_watt"],
+                state_slug,
+                f"{suggested_object_id}_{state_slug}_limit",
             )
+        )
 
     async_add_entities(entities)
 
@@ -143,7 +145,6 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
 
         if last_state := await self.async_get_last_state():
             self._state_value = last_state.state
-            # Seed the tracking window with restored data to keep baseline history stable
             if "source_power" in last_state.attributes:
                 saved_power = last_state.attributes["source_power"]
                 if saved_power is not None:
@@ -195,23 +196,18 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
         now = dt_util.utcnow().timestamp()
 
         if not use_debounce:
-            # Immediate baseline parsing during initial bootup setups
             mean_power = power_val
             self._power_history = [(now, power_val)]
         else:
             cutoff = now - 30
-            # Split window data arrays into expired frames and valid active frames
             expired = [item for item in self._power_history if item[0] < cutoff]
             active = [item for item in self._power_history if item[0] >= cutoff]
 
-            # Safety Lock: Retain the last known value if the active window is completely empty
             if not active and expired:
                 active.append((cutoff, expired[-1][1]))
 
             active.append((now, power_val))
             self._power_history = active
-
-            # Evaluate rolling average across the active time array explicitly
             mean_power = sum(w for _, w in self._power_history) / len(
                 self._power_history
             )
@@ -244,8 +240,8 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
         state_map: dict[str, str] = {}
         for state_item in self._states:
             max_watt_str = (
-                "Infinite"
-                if state_item["max_watt"] == float("inf")
+                "Catch-all fallback (9999 W)"
+                if state_item["max_watt"] == 9999.0
                 else f"{state_item['max_watt']} W"
             )
             state_map[state_item["name"]] = max_watt_str
@@ -313,13 +309,16 @@ class WattWatcherStateLimitSensor(SensorEntity):
         device_name: str,
         state_label: str,
         limit_watt: float,
+        state_slug: str,
         suggested_object_id: str,
     ) -> None:
         """Initialize fixed configuration tracker entities."""
         self.entity_id = f"sensor.{suggested_object_id}"
-        self._attr_name = f"State Limit {state_label}"
+        self._state_label = state_label
         self._attr_native_value = limit_watt
-        self._attr_unique_id = f"{entry_id}_limit_{state_label.lower()}"
+
+        # Tie unique_id directly to the name slug to achieve uniform pure text layout ids
+        self._attr_unique_id = f"{entry_id}_limit_{state_slug}"
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry_id)},
@@ -327,3 +326,8 @@ class WattWatcherStateLimitSensor(SensorEntity):
             manufacturer="ticstyle",
             model="WattWatcher",
         )
+
+    @property
+    def name(self) -> str:
+        """Dynamically return the name to force UI updates during reconfiguration."""
+        return f"State Limit {self._state_label}"
