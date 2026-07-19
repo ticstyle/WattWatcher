@@ -30,11 +30,11 @@ jobs:
               });
               
               if (commits.data.length > 0) {
-                // Get the very last commit message
-                const lastCommitMessage = commits.data[commits.data.length - 1].commit.message;
+                // Get the very first commit message
+                const firstCommitMessage = commits.data[0].commit.message;
                 
                 // Keep only the first line of the message
-                const newTitle = lastCommitMessage.split('\n')[0].trim();
+                const newTitle = firstCommitMessage.split('\n')[0].trim();
                 
                 // Ensure the new commit title itself is valid and long enough to be useful
                 if (newTitle.length >= 4) {
@@ -47,10 +47,9 @@ jobs:
                   });
                   console.log(`Condition met (Title length ${currentTitle.length} < 4). Updated to: "${newTitle}"`);
                 } else {
-                  console.log(`Aborted: The latest commit message ("${newTitle}") is also shorter than 4 characters.`);
+                  console.log(`Aborted: The first commit message ("${newTitle}") is also shorter than 4 characters.`);
                 }
               }
             } else {
               console.log(`Skipping: Current title "${currentTitle}" is ${currentTitle.length} characters long.`);
             }
-            
