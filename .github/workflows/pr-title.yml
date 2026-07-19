@@ -22,8 +22,8 @@ jobs:
             // Only proceed if the title length is less than 4 characters
             if (currentTitle.length < 4) {
               
-              // Fetch the commits belonging to this PR
-              const commits = await github.rest.pullRequests.listCommits({
+              // Fetch the commits belonging to this PR using the correct pulls object
+              const commits = await github.rest.pulls.listCommits({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: pr.number
@@ -38,7 +38,8 @@ jobs:
                 
                 // Ensure the new commit title itself is valid and long enough to be useful
                 if (newTitle.length >= 4) {
-                  await github.rest.pullRequests.update({
+                  // Update the PR using the correct pulls object
+                  await github.rest.pulls.update({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     pull_number: pr.number,
@@ -52,3 +53,4 @@ jobs:
             } else {
               console.log(`Skipping: Current title "${currentTitle}" is ${currentTitle.length} characters long.`);
             }
+            
