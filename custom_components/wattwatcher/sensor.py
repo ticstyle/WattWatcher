@@ -1,4 +1,5 @@
 """Sensor platform for WattWatcher integration."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -26,15 +27,15 @@ async def async_setup_entry(
 ) -> None:
     """Set up the WattWatcher sensor platform."""
     config = {**config_entry.data, **config_entry.options}
-    
+
     name: str = config["name"]
     power_sensor: str = config["power_sensor"]
-    
+
     states = []
     for i in range(1, MAX_STATES + 1):
         state_name = config.get(f"state_{i}_name")
         state_watt = config.get(f"state_{i}_max_watt")
-        
+
         if state_name:
             val_watt = float(state_watt) if state_watt is not None else float("inf")
             states.append({"name": state_name, "max_watt": val_watt})
@@ -73,7 +74,7 @@ class WattWatcherSensor(SensorEntity):
         self._power_sensor = power_sensor
         self._states = states
         self._attr_suggested_object_id = suggested_object_id
-        
+
         self.entity_id = f"sensor.{suggested_object_id}"
         self._attr_name = ""
         self._state_value: str | None = None
@@ -162,12 +163,10 @@ class WattWatcherSensor(SensorEntity):
 
         self._cancel_debounce()
         self._pending_state_value = target_state
-        
+
         # Fire delayed state switch execution hook
         self._debounce_unsub = async_call_later(
-            self.hass,
-            timedelta(seconds=FLUCTUATION_DELAY),
-            self._async_commit_state
+            self.hass, timedelta(seconds=FLUCTUATION_DELAY), self._async_commit_state
         )
 
     async def _async_commit_state(self, _now: Any) -> None:
