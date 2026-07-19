@@ -1,15 +1,10 @@
 """Sensor platform for WattWatcher integration."""
-
 from __future__ import annotations
 
 from datetime import timedelta
 from typing import Any
 
-from homeassistant.components.sensor import (
-    SensorEntity,
-    SensorDeviceClass,
-    SensorStateClass,
-)
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN, UnitOfPower
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
@@ -31,15 +26,15 @@ async def async_setup_entry(
 ) -> None:
     """Set up the WattWatcher sensor platform."""
     config = {**config_entry.data, **config_entry.options}
-
+    
     name: str = config["name"]
     power_sensor: str = config["power_sensor"]
-
+    
     states = []
     for i in range(1, MAX_STATES + 1):
         state_name = config.get(f"state_{i}_name")
         state_watt = config.get(f"state_{i}_max_watt")
-
+        
         if state_name:
             val_watt = float(state_watt) if state_watt is not None else float("inf")
             states.append({"name": state_name, "max_watt": val_watt})
@@ -47,7 +42,6 @@ async def async_setup_entry(
     slug = name.lower().replace(" ", "_").replace("-", "_")
     suggested_object_id = f"wattwatcher_{slug}"
 
-    # Initialize the main orchestrating tracking sensor
     main_sensor = WattWatcherSensor(
         config_entry.entry_id,
         name,
@@ -58,14 +52,10 @@ async def async_setup_entry(
 
     entities: list[SensorEntity] = [main_sensor]
 
-    # Append the direct calculated average power entity
     entities.append(
-        WattWatcherPowerSensor(
-            config_entry.entry_id, name, suggested_object_id, main_sensor
-        )
+        WattWatcherPowerSensor(config_entry.entry_id, name, suggested_object_id, main_sensor)
     )
 
-    # Dynamically append limit sensors for all configured states (omitting the trailing infinity catch-all)
     for state_item in states:
         if state_item["max_watt"] != float("inf"):
             state_slug = state_item["name"].lower().replace(" ", "_").replace("-", "_")
@@ -100,7 +90,7 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
         self._power_sensor = power_sensor
         self._states = states
         self._attr_suggested_object_id = suggested_object_id
-
+        
         self.entity_id = f"sensor.{suggested_object_id}"
         self._attr_name = ""
         self._state_value: str | None = None
@@ -127,9 +117,14 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
     async def async_added_to_hass(self) -> None:
         """Handle entity registry lifecycle hooks and restore previous state."""
         await super().async_added_to_hass()
-
+        
         if last_state := await self.async_get_last_state():
             self._state_value = last_state.state
+            # Restore the previous raw power from attributes to survive restarts/reloads
+            if "source_power" in last_state.attributes:
+                saved_power = last_state.attributes["source_power"]
+                if saved_power is not None:
+                    self._last_raw_power = float(saved_power)
 
         if initial_state := self.hass.states.get(self._power_sensor):
             self._update_power_state(initial_state.state, use_debounce=False)
@@ -157,7 +152,6 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
             self._cancel_debounce()
             self.current_power = None
             self.source_power = None
-            self._last_raw_power = None
             self._notify_listeners()
             self.async_write_ha_state()
             return
@@ -169,11 +163,11 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
             self._cancel_debounce()
             self.current_power = None
             self.source_power = None
-            self._last_raw_power = None
             self._notify_listeners()
             self.async_write_ha_state()
             return
 
+        # Calculate rolling mean if we have a history, otherwise fall back to raw only on first installation
         if self._last_raw_power is None:
             mean_power = power_val
         else:
@@ -209,9 +203,11 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
 
         self._cancel_debounce()
         self._pending_state_value = target_state
-
+        
         self._debounce_unsub = async_call_later(
-            self.hass, timedelta(seconds=FLUCTUATION_DELAY), self._async_commit_state
+            self.hass,
+            timedelta(seconds=FLUCTUATION_DELAY),
+            self._async_commit_state
         )
 
     def _notify_listeners(self) -> None:
@@ -239,9 +235,7 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
         formatted_states = [
             {
                 "name": state_item["name"],
-                "max_watt": "Infinite"
-                if state_item["max_watt"] == float("inf")
-                else state_item["max_watt"],
+                "max_watt": "Infinite" if state_item["max_watt"] == float("inf") else state_item["max_watt"],
                 "": "",
             }
             for state_item in self._states
@@ -276,7 +270,7 @@ class WattWatcherPowerSensor(SensorEntity):
         self.entity_id = f"sensor.{parent_slug}_current_power"
         self._attr_name = "Current Power"
         self._attr_unique_id = f"{entry_id}_current_power_diagnostic"
-
+        
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry_id)},
             name=device_name,
@@ -317,7 +311,7 @@ class WattWatcherStateLimitSensor(SensorEntity):
         self._attr_name = f"State Limit {state_label}"
         self._attr_native_value = limit_watt
         self._attr_unique_id = f"{entry_id}_limit_{state_label.lower()}"
-
+        
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry_id)},
             name=device_name,
