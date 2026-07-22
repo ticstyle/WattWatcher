@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.components.sensor import (
-    SensorEntity,
     SensorDeviceClass,
+    SensorEntity,
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -21,7 +21,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 
-MAX_STATES = 6
+MAX_STATES = 10
 
 
 async def async_setup_entry(
@@ -173,7 +173,7 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
             self._update_power_state(new_state.state, use_debounce=True)
 
     def _update_power_state(self, raw_state: str, use_debounce: bool) -> None:
-        """Evaluate the raw state value against thresholds using a 30s rolling window."""
+        """Evaluate the raw state value against thresholds using a strict time window."""
         if raw_state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
             self.current_power = None
             self.source_power = None
@@ -195,19 +195,18 @@ class WattWatcherSensor(RestoreEntity, SensorEntity):
 
         now = dt_util.utcnow().timestamp()
 
-        if not use_debounce:
+        if not use_debounce or power_val == 0.0:
+            # Direct override: If power is explicitly 0.0W or initializing, clear past history
             mean_power = power_val
             self._power_history = [(now, power_val)]
         else:
             cutoff = now - 30
-            expired = [item for item in self._power_history if item[0] < cutoff]
+            # Retain only entries recorded within the strict 30-second window
             active = [item for item in self._power_history if item[0] >= cutoff]
-
-            if not active and expired:
-                active.append((cutoff, expired[-1][1]))
 
             active.append((now, power_val))
             self._power_history = active
+
             mean_power = sum(w for _, w in self._power_history) / len(
                 self._power_history
             )
