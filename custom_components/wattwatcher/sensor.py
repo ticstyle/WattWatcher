@@ -330,4 +330,3 @@ class WattWatcherStateLimitSensor(SensorEntity):
     def name(self) -> str:
         """Dynamically return the name to force UI updates during reconfiguration."""
         return f"State Limit {self._state_label}"
-        
