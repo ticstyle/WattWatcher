@@ -17,7 +17,8 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.restore_state import RestoreEntity
-from homeassistant.util import dt as dt_util, slugify
+from homeassistant.util import dt as dt_util
+from homeassistant.util import slugify
 
 from .const import DOMAIN, MAX_STATES
 
@@ -329,4 +330,3 @@ class WattWatcherStateLimitSensor(SensorEntity):
     def name(self) -> str:
         """Dynamically return the name to force UI updates during reconfiguration."""
         return f"State Limit {self._state_label}"
-        
