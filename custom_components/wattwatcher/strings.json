@@ -32,6 +32,18 @@
           "state_6_section": "State 6 Layout",
           "state_6_name": "State 6 Name",
           "state_6_max_watt": "State 6 Max Watt",
+          "state_7_section": "State 7 Layout",
+          "state_7_name": "State 7 Name",
+          "state_7_max_watt": "State 7 Max Watt",
+          "state_8_section": "State 8 Layout",
+          "state_8_name": "State 8 Name",
+          "state_8_max_watt": "State 8 Max Watt",
+          "state_9_section": "State 9 Layout",
+          "state_9_name": "State 9 Name",
+          "state_9_max_watt": "State 9 Max Watt",
+          "state_10_section": "State 10 Layout",
+          "state_10_name": "State 10 Name",
+          "state_10_max_watt": "State 10 Max Watt",
           "add_more_states": "I want to add an additional state"
         }
       },
@@ -57,7 +69,19 @@
           "state_5_max_watt": "State 5 Max Watt",
           "state_6_section": "State 6 Layout",
           "state_6_name": "State 6 Name",
-          "state_6_max_watt": "State 6 Max Watt"
+          "state_6_max_watt": "State 6 Max Watt",
+          "state_7_section": "State 7 Layout",
+          "state_7_name": "State 7 Name",
+          "state_7_max_watt": "State 7 Max Watt",
+          "state_8_section": "State 8 Layout",
+          "state_8_name": "State 8 Name",
+          "state_8_max_watt": "State 8 Max Watt",
+          "state_9_section": "State 9 Layout",
+          "state_9_name": "State 9 Name",
+          "state_9_max_watt": "State 9 Max Watt",
+          "state_10_section": "State 10 Layout",
+          "state_10_name": "State 10 Name",
+          "state_10_max_watt": "State 10 Max Watt"
         }
       }
     },
@@ -89,7 +113,19 @@
           "state_5_max_watt": "State 5 Max Watt",
           "state_6_section": "State 6 Layout",
           "state_6_name": "State 6 Name",
-          "state_6_max_watt": "State 6 Max Watt"
+          "state_6_max_watt": "State 6 Max Watt",
+          "state_7_section": "State 7 Layout",
+          "state_7_name": "State 7 Name",
+          "state_7_max_watt": "State 7 Max Watt",
+          "state_8_section": "State 8 Layout",
+          "state_8_name": "State 8 Name",
+          "state_8_max_watt": "State 8 Max Watt",
+          "state_9_section": "State 9 Layout",
+          "state_9_name": "State 9 Name",
+          "state_9_max_watt": "State 9 Max Watt",
+          "state_10_section": "State 10 Layout",
+          "state_10_name": "State 10 Name",
+          "state_10_max_watt": "State 10 Max Watt"
         }
       }
     },

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from typing import Any
-import voluptuous as vol
 
+import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
@@ -12,11 +13,9 @@ from homeassistant.config_entries import (
 )
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
-import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN
+from .const import DOMAIN, MAX_STATES
 
-MAX_STATES = 6
 DEFAULT_STATES = ["Standby", "Idle", "Running", "Gaming", "Working", "Going", "On"]
 
 
