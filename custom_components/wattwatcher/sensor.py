@@ -62,9 +62,10 @@ async def async_setup_entry(
         entity_reg, config_entry.entry_id
     )
     for entity_entry in existing_entries:
-        if "_limit_" in entity_entry.unique_id or "_slot_" in entity_entry.unique_id:
-            if entity_entry.unique_id not in active_unique_ids:
-                entity_reg.async_remove(entity_entry.entity_id)
+        if (
+            "_limit_" in entity_entry.unique_id or "_slot_" in entity_entry.unique_id
+        ) and entity_entry.unique_id not in active_unique_ids:
+            entity_reg.async_remove(entity_entry.entity_id)
 
     main_sensor = WattWatcherSensor(
         config_entry.entry_id,
