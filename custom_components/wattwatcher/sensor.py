@@ -18,10 +18,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
+from homeassistant.util.slugify import slugify
 
-from .const import DOMAIN
-
-MAX_STATES = 10
+from .const import DOMAIN, MAX_STATES
 
 
 async def async_setup_entry(
@@ -45,7 +44,7 @@ async def async_setup_entry(
             val_watt = float(state_watt) if state_watt is not None else 9999.0
             states.append({"name": state_name, "max_watt": val_watt})
 
-    slug = name.lower().replace(" ", "_").replace("-", "_")
+    slug = slugify(name)
     suggested_object_id = f"wattwatcher_{slug}"
 
     # Generate the exact unique IDs that are valid based entirely on the state names
@@ -54,7 +53,7 @@ async def async_setup_entry(
         f"{config_entry.entry_id}_current_power_diagnostic",
     }
     for state_item in states:
-        state_slug = state_item["name"].lower().replace(" ", "_").replace("-", "_")
+        state_slug = slugify(state_item["name"])
         active_unique_ids.add(f"{config_entry.entry_id}_limit_{state_slug}")
 
     # Safely purge any old limit entities that are no longer part of the active configuration names
@@ -84,7 +83,7 @@ async def async_setup_entry(
     )
 
     for state_item in states:
-        state_slug = state_item["name"].lower().replace(" ", "_").replace("-", "_")
+        state_slug = slugify(state_item["name"])
         entities.append(
             WattWatcherStateLimitSensor(
                 config_entry.entry_id,
@@ -330,3 +329,4 @@ class WattWatcherStateLimitSensor(SensorEntity):
     def name(self) -> str:
         """Dynamically return the name to force UI updates during reconfiguration."""
         return f"State Limit {self._state_label}"
+        
