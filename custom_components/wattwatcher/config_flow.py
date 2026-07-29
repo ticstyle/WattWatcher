@@ -14,9 +14,8 @@ from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN
+from .const import DOMAIN, MAX_STATES
 
-MAX_STATES = 6
 DEFAULT_STATES = ["Standby", "Idle", "Running", "Gaming", "Working", "Going", "On"]
 
 
