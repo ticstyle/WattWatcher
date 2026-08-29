@@ -7,44 +7,68 @@
         "data": {
           "name": "Device Name (e.g., PC, Washing Machine)",
           "power_sensor": "Source Power Sensor",
-          "state_1_section": "State 1 (Lowest Range)",
           "state_1_name": "State 1 Name",
           "state_1_max_watt": "State 1 Max Watt",
-          "state_2_section": "State 2 (Next Range)",
           "state_2_name": "State 2 Name",
           "state_2_max_watt": "State 2 Max Watt",
           "add_more_states": "I want to add an additional state"
+        },
+        "sections": {
+          "state_1_section": {
+            "name": "State 1 (Lowest Range)"
+          },
+          "state_2_section": {
+            "name": "State 2 (Next Range)"
+          }
         }
       },
       "add_state": {
         "title": "Add State {index}",
         "description": "Configure the thresholds for the next operational range layer.",
         "data": {
-          "state_3_section": "State 3 Layout",
           "state_3_name": "State 3 Name",
           "state_3_max_watt": "State 3 Max Watt",
-          "state_4_section": "State 4 Layout",
           "state_4_name": "State 4 Name",
           "state_4_max_watt": "State 4 Max Watt",
-          "state_5_section": "State 5 Layout",
           "state_5_name": "State 5 Name",
           "state_5_max_watt": "State 5 Max Watt",
-          "state_6_section": "State 6 Layout",
           "state_6_name": "State 6 Name",
           "state_6_max_watt": "State 6 Max Watt",
-          "state_7_section": "State 7 Layout",
           "state_7_name": "State 7 Name",
           "state_7_max_watt": "State 7 Max Watt",
-          "state_8_section": "State 8 Layout",
           "state_8_name": "State 8 Name",
           "state_8_max_watt": "State 8 Max Watt",
-          "state_9_section": "State 9 Layout",
           "state_9_name": "State 9 Name",
           "state_9_max_watt": "State 9 Max Watt",
-          "state_10_section": "State 10 Layout",
           "state_10_name": "State 10 Name",
           "state_10_max_watt": "State 10 Max Watt",
           "add_more_states": "I want to add an additional state"
+        },
+        "sections": {
+          "state_3_section": {
+            "name": "State 3 Layout"
+          },
+          "state_4_section": {
+            "name": "State 4 Layout"
+          },
+          "state_5_section": {
+            "name": "State 5 Layout"
+          },
+          "state_6_section": {
+            "name": "State 6 Layout"
+          },
+          "state_7_section": {
+            "name": "State 7 Layout"
+          },
+          "state_8_section": {
+            "name": "State 8 Layout"
+          },
+          "state_9_section": {
+            "name": "State 9 Layout"
+          },
+          "state_10_section": {
+            "name": "State 10 Layout"
+          }
         }
       },
       "reconfigure": {
@@ -52,36 +76,58 @@
         "description": "Adjust the source power sensor or fine-tune the maximum watt thresholds for your operational states.",
         "data": {
           "power_sensor": "Source Power Sensor",
-          "state_1_section": "State 1 (Lowest Range)",
           "state_1_name": "State 1 Name",
           "state_1_max_watt": "State 1 Max Watt",
-          "state_2_section": "State 2 (Next Range)",
           "state_2_name": "State 2 Name",
           "state_2_max_watt": "State 2 Max Watt",
-          "state_3_section": "State 3 Layout",
           "state_3_name": "State 3 Name",
           "state_3_max_watt": "State 3 Max Watt",
-          "state_4_section": "State 4 Layout",
           "state_4_name": "State 4 Name",
           "state_4_max_watt": "State 4 Max Watt",
-          "state_5_section": "State 5 Layout",
           "state_5_name": "State 5 Name",
           "state_5_max_watt": "State 5 Max Watt",
-          "state_6_section": "State 6 Layout",
           "state_6_name": "State 6 Name",
           "state_6_max_watt": "State 6 Max Watt",
-          "state_7_section": "State 7 Layout",
           "state_7_name": "State 7 Name",
           "state_7_max_watt": "State 7 Max Watt",
-          "state_8_section": "State 8 Layout",
           "state_8_name": "State 8 Name",
           "state_8_max_watt": "State 8 Max Watt",
-          "state_9_section": "State 9 Layout",
           "state_9_name": "State 9 Name",
           "state_9_max_watt": "State 9 Max Watt",
-          "state_10_section": "State 10 Layout",
           "state_10_name": "State 10 Name",
           "state_10_max_watt": "State 10 Max Watt"
+        },
+        "sections": {
+          "state_1_section": {
+            "name": "State 1 (Lowest Range)"
+          },
+          "state_2_section": {
+            "name": "State 2 (Next Range)"
+          },
+          "state_3_section": {
+            "name": "State 3 Layout"
+          },
+          "state_4_section": {
+            "name": "State 4 Layout"
+          },
+          "state_5_section": {
+            "name": "State 5 Layout"
+          },
+          "state_6_section": {
+            "name": "State 6 Layout"
+          },
+          "state_7_section": {
+            "name": "State 7 Layout"
+          },
+          "state_8_section": {
+            "name": "State 8 Layout"
+          },
+          "state_9_section": {
+            "name": "State 9 Layout"
+          },
+          "state_10_section": {
+            "name": "State 10 Layout"
+          }
         }
       }
     },
@@ -96,36 +142,58 @@
         "description": "Adjust the source power sensor or fine-tune the maximum watt thresholds for your operational states.",
         "data": {
           "power_sensor": "Source Power Sensor",
-          "state_1_section": "State 1 (Lowest Range)",
           "state_1_name": "State 1 Name",
           "state_1_max_watt": "State 1 Max Watt",
-          "state_2_section": "State 2 (Next Range)",
           "state_2_name": "State 2 Name",
           "state_2_max_watt": "State 2 Max Watt",
-          "state_3_section": "State 3 Layout",
           "state_3_name": "State 3 Name",
           "state_3_max_watt": "State 3 Max Watt",
-          "state_4_section": "State 4 Layout",
           "state_4_name": "State 4 Name",
           "state_4_max_watt": "State 4 Max Watt",
-          "state_5_section": "State 5 Layout",
           "state_5_name": "State 5 Name",
           "state_5_max_watt": "State 5 Max Watt",
-          "state_6_section": "State 6 Layout",
           "state_6_name": "State 6 Name",
           "state_6_max_watt": "State 6 Max Watt",
-          "state_7_section": "State 7 Layout",
           "state_7_name": "State 7 Name",
           "state_7_max_watt": "State 7 Max Watt",
-          "state_8_section": "State 8 Layout",
           "state_8_name": "State 8 Name",
           "state_8_max_watt": "State 8 Max Watt",
-          "state_9_section": "State 9 Layout",
           "state_9_name": "State 9 Name",
           "state_9_max_watt": "State 9 Max Watt",
-          "state_10_section": "State 10 Layout",
           "state_10_name": "State 10 Name",
           "state_10_max_watt": "State 10 Max Watt"
+        },
+        "sections": {
+          "state_1_section": {
+            "name": "State 1 (Lowest Range)"
+          },
+          "state_2_section": {
+            "name": "State 2 (Next Range)"
+          },
+          "state_3_section": {
+            "name": "State 3 Layout"
+          },
+          "state_4_section": {
+            "name": "State 4 Layout"
+          },
+          "state_5_section": {
+            "name": "State 5 Layout"
+          },
+          "state_6_section": {
+            "name": "State 6 Layout"
+          },
+          "state_7_section": {
+            "name": "State 7 Layout"
+          },
+          "state_8_section": {
+            "name": "State 8 Layout"
+          },
+          "state_9_section": {
+            "name": "State 9 Layout"
+          },
+          "state_10_section": {
+            "name": "State 10 Layout"
+          }
         }
       }
     },

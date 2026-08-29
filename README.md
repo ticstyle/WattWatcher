@@ -50,7 +50,7 @@ Add and adjust the integration via the Home Assistant User Interface. The setup 
 During setup or reconfiguration, you will be prompted to provide:
 1. **Device Name:** A descriptive name used to build the parent device structure and object ID (e.g., `Stoffe-PC`).
 2. **Source Power Sensor:** An existing `sensor` entity monitoring power consumption in pure Watts (`W`).
-3. **States 1 to 10 (Optional):** Pairs of custom names and their corresponding maximum watt boundaries configured in strictly ascending order (e.g., State 1: `Standby` up to `5W`, State 2: `Idle` up to `200W`, State 3: `Gaming` up to `Infinite`).
+3. **States 1 to 10 (Optional):** Pairs of custom names and their corresponding maximum watt boundaries configured in strictly ascending order (e.g., State 1: `Standby` up to `5W`, State 2: `Idle` up to `200W`, State 3: `Gaming` up to `9999W`).
 
 ---
 
