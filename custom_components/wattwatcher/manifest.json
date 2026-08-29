@@ -3,8 +3,8 @@
   "name": "WattWatcher",
   "codeowners": ["@ticstyle"],
   "config_flow": true,
-  "documentation": "https://github.com/ticstyle/wattwatcher",
+  "documentation": "https://github.com/ticstyle/WattWatcher",
   "iot_class": "calculated",
-  "issue_tracker": "https://github.com/ticstyle/wattwatcher/issues",
+  "issue_tracker": "https://github.com/ticstyle/WattWatcher/issues",
   "version": "1.0.6"
 }
