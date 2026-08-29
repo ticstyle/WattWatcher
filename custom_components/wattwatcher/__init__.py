@@ -1,3 +1,4 @@
+# custom_components/wattwatcher/__init__.py
 """The WattWatcher integration."""
 
 from __future__ import annotations
@@ -29,14 +30,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     # Handle clean unloading of the sensor platform
-    if (
-        await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-        and DOMAIN in hass.data
-        and entry.entry_id in hass.data[DOMAIN]
-    ):
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok and DOMAIN in hass.data and entry.entry_id in hass.data[DOMAIN]:
         hass.data[DOMAIN].pop(entry.entry_id)
 
-    return True
+    return unload_ok
 
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
