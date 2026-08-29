@@ -4,7 +4,7 @@
   "codeowners": ["@ticstyle"],
   "config_flow": true,
   "documentation": "https://github.com/ticstyle/wattwatcher",
-  "iot_class": "local_polling",
+  "iot_class": "calculated",
   "issue_tracker": "https://github.com/ticstyle/wattwatcher/issues",
   "version": "1.0.6"
 }
