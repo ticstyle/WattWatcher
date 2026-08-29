@@ -63,7 +63,7 @@ When parsing your selected source power entity, the integration registers a unif
 | `sensor.wattwatcher_stoffe_pc_current_power` | Stoffe-PC Current Power | `311.75 W` | The smoothed, time-windowed numerical watt level currently being calculated. |
 | `sensor.wattwatcher_stoffe_pc_standby_limit` | Stoffe-PC State Limit Standby | `5.0 W` | Static, read-only entity showing the upper watt boundary configured for this state. |
 
-> **Note:** Dynamic boundary threshold sensors are automatically provisioned for all values except for the final trailing catch-all threshold (which behaves as an infinite fallback boundary).
+> **Note:** Dynamic boundary threshold sensors are automatically provisioned for all values except for the final trailing catch-all threshold (which behaves as a fallback boundary fixed at 9999 watts).
 
 ### Entity Attributes
 The core state sensor entity exposes advanced telemetry parameters for historical tracking and effortless debugging:
