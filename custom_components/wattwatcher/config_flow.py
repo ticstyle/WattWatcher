@@ -1,3 +1,4 @@
+# custom_components/wattwatcher/config_flow.py
 """Config flow for WattWatcher integration."""
 
 from __future__ import annotations
@@ -7,10 +8,12 @@ from typing import Any
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.config_entries import (
+    ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
     OptionsFlow,
 )
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 
@@ -106,6 +109,14 @@ class WattWatcherConfigFlow(ConfigFlow, domain=DOMAIN):
         """Initialize the progressive config flow instance."""
         self._accumulated_data: dict[str, Any] = {}
         self._current_setup_index = 3
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: ConfigEntry,
+    ) -> OptionsFlow:
+        """Get the options flow handler for this entry."""
+        return WattWatcherOptionsFlow()
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
