@@ -26,7 +26,7 @@ To add this integration, please add the custom repository `https://github.com/ti
 This integration is written and maintained exclusively in **English**. All entity states, attributes, configuration dialogues, and logging diagnostic files use English standards.
 
 ## ✨ Features
-* **6 Fixed Operational State Slots:** Tweak and define up to 6 custom states inside the User Interface, instantly dividing your device's power footprint into easily readable operational zones.
+* **10 Fixed Operational State Slots:** Tweak and define up to 10 custom states inside the User Interface, instantly dividing your device's power footprint into easily readable operational zones.
 * **Time-Windowed Moving Average:** Utilizes a robust 30-second sliding time-window algorithm to calculate power draw. This entirely neutralizes brief, temporary power spikes or drops—even if a fluctuation includes consecutive updates—preventing rapid, flickering state changes.
 * **Safety Lock Fallback Architecture:** Built-in safeguards gracefully handle periods of perfectly constant consumption. If the source entity doesn't report any new data over a 30-second period, the logic locks onto the last known baseline rather than wiping the moving window.
 * **Automatic Multi-Sensor Provisioning:** Spins up a complete, uniform diagnostic package under a single device registry layer—instantly spawning your main state classifier, an explicit real-time power monitor entity, and read-only limits for each configured threshold.
@@ -50,7 +50,7 @@ Add and adjust the integration via the Home Assistant User Interface. The setup 
 During setup or reconfiguration, you will be prompted to provide:
 1. **Device Name:** A descriptive name used to build the parent device structure and object ID (e.g., `Stoffe-PC`).
 2. **Source Power Sensor:** An existing `sensor` entity monitoring power consumption in pure Watts (`W`).
-3. **States 1 to 6 (Optional):** Pairs of custom names and their corresponding maximum watt boundaries configured in strictly ascending order (e.g., State 1: `Standby` up to `5W`, State 2: `Idle` up to `200W`, State 3: `Gaming` up to `Infinite`).
+3. **States 1 to 10 (Optional):** Pairs of custom names and their corresponding maximum watt boundaries configured in strictly ascending order (e.g., State 1: `Standby` up to `5W`, State 2: `Idle` up to `200W`, State 3: `Gaming` up to `Infinite`).
 
 ---
 
